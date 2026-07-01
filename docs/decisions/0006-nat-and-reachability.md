@@ -1,4 +1,4 @@
-# ADR-0006 — NAT e alcançabilidade: scans públicas, relay só fallback
+# ADR-0006 — NAT e alcançabilidade: endereço público configurado manualmente
 
 **Status:** Aceito
 
@@ -18,13 +18,17 @@ mobile (atrás de NAT) ◀─ disca ── qualquer um        ❌ entrada bloque
 
 ## Decisão
 
-- **Nós plenos (scans/CLIs) têm endereço público**, obtido via **hole punching**
-  (AutoNAT para descobrir a situação de NAT + DCUtR para furar), com **circuit relay
-  v2** como *fallback* apenas para nós que não conseguirem furar o NAT.
+- **Nós plenos (scans/CLIs) têm endereço público, configurado manualmente** pelo
+  operador: port forwarding no roteador, IP público ou VPS. A alcançabilidade é
+  responsabilidade de quem opera o nó pleno; **nenhum mecanismo de furo automático
+  de NAT é requisito**.
+- **Furo automático de NAT** (AutoNAT + DCUtR, com circuit relay v2 como fallback)
+  fica **adiado para avaliação no marco 4**, quando a operação real mostrar quantas
+  scans de fato ficam presas atrás de NAT sem conseguir configurar o roteador.
 - **O mobile só faz conexões de saída** direto ao detentor do conteúdo. Seu NAT é
   irrelevante e ele **nunca precisa de relay para ler**.
-- **O relay nunca está no caminho de leitura do mobile** — ele é, no máximo, um
-  fallback de alcançabilidade entre nós plenos.
+- **Nada fica no caminho de leitura do mobile** — ele disca direto o endereço
+  público do detentor; não delega retrieval a ninguém.
 
 Roteamento + retrieval do mobile (padrão *delegated routing + direct fetch*):
 
@@ -35,6 +39,18 @@ Roteamento + retrieval do mobile (padrão *delegated routing + direct fetch*):
 ```
 
 ## Alternativas consideradas
+
+### Furo automático de NAT como requisito da v1 (AutoNAT + DCUtR + relay v2) — adiada
+
+Nós plenos obteriam endereço público automaticamente via hole punching, com relay
+como fallback, sem exigir configuração do operador.
+
+- **Por que adiada:** as stacks JVM disponíveis não oferecem DCUtR (e relay v2 é
+  imaturo), então exigir furo automático travaria a PoC e a v1 da rede em
+  engenharia de infraestrutura. Operar um nó pleno já é uma tarefa técnica
+  (publicar, assinar, manter online); configurar port forwarding é um custo
+  aceitável para esse perfil. A avaliação volta no **marco 4**, com dados reais de
+  quantas scans ficam de fora por não conseguirem configurar.
 
 ### Relay como proxy obrigatório de retrieval — descartada
 
@@ -54,8 +70,13 @@ Tentar tornar o mobile discável.
 
 ## Consequências
 
-- Scans/CLIs precisam de suporte robusto a AutoNAT/DCUtR/relay-v2 (validar na PoC).
-- A saúde da rede deve ser monitorada para evitar que **poucas scans virem os relays
-  de todos** — centralização escondida (tema de observabilidade no marco 4).
+- O app desktop e a CLI devem **orientar o operador** na configuração: detectar
+  porta inacessível, instruir o port forwarding e oferecer um teste de
+  alcançabilidade ("sua scan está discável?").
+- A barreira de entrada para scans domésticas **aumenta** — é o custo aceito. Se a
+  operação real mostrar que isso limita a adoção, o **marco 4** reavalia o furo
+  automático (AutoNAT/DCUtR/relay v2).
+- Sem relay na v1, não existe por ora o risco de centralização escondida em relays;
+  o tema retorna junto com a avaliação do marco 4.
 - Como todos os detentores são nós plenos públicos, o mobile sempre consegue discá-
   los diretamente.

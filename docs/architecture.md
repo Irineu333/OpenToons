@@ -194,11 +194,12 @@ mobile (atrás de NAT) ── disca ─▶ scan (pública)     ✅ conexão de s
 mobile (atrás de NAT) ◀─ disca ── qualquer um         ❌ entrada bloqueada (e ok: mobile não serve)
 ```
 
-- **Scans/CLIs** obtêm endereço público via **hole punching** (AutoNAT + DCUtR),
-  com **circuit relay v2** como *fallback* apenas para nós que não conseguem furar
-  o NAT.
-- **O relay nunca está no caminho de leitura do mobile.** O mobile só faz conexões
-  de saída direto ao detentor; não delega retrieval a ninguém.
+- **Scans/CLIs** têm endereço público **configurado manualmente** pelo operador
+  (port forwarding no roteador, IP público ou VPS). **Furo automático de NAT**
+  (AutoNAT + DCUtR + circuit relay v2) **não é requisito** — fica adiado para
+  avaliação no marco 4, com dados da operação real.
+- **Nada fica no caminho de leitura do mobile.** O mobile só faz conexões de saída
+  direto ao detentor; não delega retrieval a ninguém.
 
 ## 6. Confiança e verificação
 
@@ -249,3 +250,5 @@ Ver [ADR-0009](./decisions/0009-scoring-and-donations.md). Resumo do modelo:
 | Agrupar "mesma obra" de scans diferentes na UI | Adiado | §3.1 |
 | Dicas de disponibilidade no catálogo vs consulta ao vivo | Adiado (consulta ao vivo por ora) | §4.3 |
 | Bibliotecas concretas de libp2p/IPFS para KMP | A validar na PoC | [roadmap](./roadmap.md) marco 0 |
+| Furo automático de NAT (AutoNAT/DCUtR/relay v2) | Adiado (avaliação no marco 4) | [ADR-0006](./decisions/0006-nat-and-reachability.md) |
+| Fallback HTTP de consumo (Caminho B) | Adiado (avaliação no marco 4) | [ADR-0005](./decisions/0005-mobile-client.md) |

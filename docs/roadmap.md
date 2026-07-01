@@ -25,16 +25,19 @@ produto. É código descartável cujo produto é *conhecimento*, não features.
 **Escopo:**
 
 - validar bibliotecas de **libp2p/IPFS** viáveis em Kotlin Multiplatform (JVM e Android);
-- provar **hole punching** (scan atrás de NAT doméstico fica discável);
+- provar **nó pleno discável** com endereço público **configurado manualmente**
+  (port forwarding; furo automático de NAT não é requisito — ver
+  [ADR-0006](./decisions/0006-nat-and-reachability.md));
 - provar **DHT client** no Android (consultar sem servir, escapar do bootstrap);
 - provar **manifesto assinado** (assinar, verificar, detectar rollback via `seq`);
 - provar **troca de blocos** direta entre nós (baixar um capítulo ponta a ponta).
 
-**Concluído quando:** um capítulo assinado por um "desktop" é descoberto e baixado
-por um "mobile" via DHT, com verificação de assinatura, atravessando NAT.
+**Concluído quando:** um capítulo assinado por um "desktop" (discável via endereço
+público configurado manualmente) é descoberto e baixado por um "mobile" atrás de
+NAT, via DHT, com verificação de assinatura.
 
-**Riscos que este marco elimina:** viabilidade de libp2p em KMP/Android, NAT no
-mundo real, custo de bateria/dados do DHT client.
+**Riscos que este marco elimina:** viabilidade de libp2p em KMP/Android e custo de
+bateria/dados do DHT client.
 
 ## Marco 1 — Leitor mobile completo (offline)
 
@@ -84,8 +87,7 @@ dedicados, sempre online.
 
 - **CLI** headless para rodar em VPS como **nó pleno** que apenas replica e serve;
 - configuração de teto de armazenamento e de política de replicação;
-- operação estável de longa duração (cache quente, bom cidadão da DHT, relay
-  opcional de fallback para nós que não furam o NAT).
+- operação estável de longa duração (cache quente, bom cidadão da DHT).
 
 **Concluído quando:** uma VPS sobe a CLI, entra na rede, replica conteúdo de scans
 e passa a servir leitores de forma confiável.
@@ -99,6 +101,11 @@ revelar.
 
 - **rede v2:** melhorias de descoberta, roteamento e replicação **balanceada
   automaticamente**; otimização de bateria/dados no mobile;
+- avaliar **furo automático de NAT** (AutoNAT/DCUtR/relay v2) para scans que não
+  conseguem configurar endereço público manualmente (ver
+  [ADR-0006](./decisions/0006-nat-and-reachability.md));
+- avaliar **fallback HTTP de consumo** — Caminho B do
+  [ADR-0005](./decisions/0005-mobile-client.md) — como complemento ao DHT client;
 - resiliência de bootstrap multi-canal endurecida;
 - endereçar a **autenticidade de identidade** (ver [ADR-0008](./decisions/0008-identity-trust.md), hoje em aberto);
 - observabilidade da saúde da rede (ex.: detectar centralização escondida em

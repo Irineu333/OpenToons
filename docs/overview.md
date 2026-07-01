@@ -131,4 +131,4 @@ bibliotecas concretas serão validadas na **Prova de Conceito** (marco 0 do
 | **seq** | Número de sequência monotônico do manifesto; protege contra rollback. |
 | **PEX** | *Peer Exchange* — nós trocam entre si listas de outros nós vivos. |
 | **Bootstrap** | Nós/lista de entrada usados apenas para o primeiro contato com a rede. |
-| **Hole punching** | Técnica para estabelecer conexão direta entre nós atrás de NAT. |
+| **Hole punching** | Técnica para estabelecer conexão direta entre nós atrás de NAT. Não é requisito da v1; avaliação adiada para o marco 4 (ver [ADR-0006](./decisions/0006-nat-and-reachability.md)). |
