@@ -101,9 +101,10 @@ NÓS PLENOS (sustentam a malha)            NÓS LEVES (parasitam a malha)
 O modelo de sustentação é **doação direta**, guiada por uma **pontuação calculada
 localmente** com base no consumo real do usuário (ver [ADR-0009](./decisions/0009-scoring-and-donations.md)):
 
-- a pontuação premia **quem publicou** e **quem serviu** o conteúdo consumido;
-- o app exibe um **ranking** e **recomenda uma doação mais justa** considerando a
-  pontuação e as doações anteriores;
+- cada **capítulo lido** dá +1 ponto a quem **publicou** e +1 a quem **serviu**
+  (quem faz os dois soma 2);
+- uma vez por mês o app destaca **um destinatário** — quem mais acumulou pontos
+  desde a última doação — e a doação **reveza** entre eles ao longo do tempo;
 - a doação vai **direto para a scan** (ou replicador), pelo meio que ela configurar;
 - **não há pagamento automático** — o humano decide. Isso evita o problema
   (não resolvido de forma trustless) de *provar* que um nó realmente serviu bytes.

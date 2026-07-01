@@ -47,7 +47,11 @@ Entrega valor imediato e amadurece a UX antes de acoplar a complexidade P2P.
 - importação/leitura local de obras e capítulos;
 - **cache/biblioteca offline** completo;
 - experiência de leitura polida (paginação, modos de leitura, favoritos, progresso);
-- modelo de dados de obra/capítulo alinhado ao futuro `obra_id` e manifesto.
+- modelo de dados de obra/capítulo alinhado ao futuro `obra_id` e manifesto;
+- **registro local de leitura**: evento `{obra_id, capítulo, chave_publicador,
+  origem, timestamp}` emitido a cada capítulo lido — é a única entrada do sistema
+  de doações do marco 5 (ver [ADR-0009](./decisions/0009-scoring-and-donations.md));
+  no marco 1, `origem` é vazia (não há rede).
 
 **Concluído quando:** um usuário lê mangás confortavelmente offline, com biblioteca
 e favoritos, sem qualquer dependência de rede.
@@ -109,14 +113,18 @@ gargalos disfarçados.
 
 **Escopo:**
 
-- **pontuação local** baseada em consumo real (pesos para publicador × servidor);
-- **aba de doação** com **ranking** local e **recomendação de doação mais justa**
-  (considerando pontuação e doações anteriores);
-- **doação direta** à scan/replicador pelo meio configurado por cada um;
-- doações também para **replicadores (CLI)** por sustentarem a rede.
+- **pontuação local** lastreada no capítulo lido: +1 para quem publicou, +1 para
+  quem serviu (ver [ADR-0009](./decisions/0009-scoring-and-donations.md));
+- **card mensal de doação**: um destinatário por vez — o topo do acumulador de
+  pontos desde a última doação; "doei" zera, "pular" segue acumulando;
+- **doação direta** pelo meio configurado por cada um, com metadados de pagamento
+  **assinados** pela chave do destinatário;
+- **replicadores (CLI)** participam da **mesma fila**: servir capítulos que foram
+  lidos pontua.
 
-**Concluído quando:** o usuário vê o quanto consumiu de cada scan e consegue doar
-diretamente, de forma justa e sem intermediário central.
+**Concluído quando:** o usuário recebe o card mensal, entende a recomendação em uma
+frase ("X capítulos = Y pontos") e consegue doar diretamente, sem intermediário
+central.
 
 ---
 
@@ -124,6 +132,9 @@ diretamente, de forma justa e sem intermediário central.
 
 - Os marcos **0** e **1** são independentes da rede e podem amadurecer em paralelo
   ao design fino dos planos de rede.
-- Detalhes de incentivo/doação e de identidade são propositalmente empurrados para
-  o fim: são as áreas com **decisões ainda em aberto** e as que menos bloqueiam o
-  valor central (ler e publicar de forma resistente à censura).
+- A mecânica de incentivo/doação já está decidida
+  ([ADR-0009](./decisions/0009-scoring-and-donations.md)), mas sua implementação
+  fica para o fim por bloquear pouco o valor central (ler e publicar de forma
+  resistente à censura) — com uma exceção: o **evento de leitura nasce no marco 1**.
+  Identidade ([ADR-0008](./decisions/0008-identity-trust.md)) segue **em aberto**
+  e é endereçada no marco 4.

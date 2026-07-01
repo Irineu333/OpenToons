@@ -17,7 +17,7 @@ decisão muda, cria-se um novo ADR que supersede o anterior.
 | [0006](./0006-nat-and-reachability.md) | NAT e alcançabilidade: scans públicas, relay só fallback | Aceito |
 | [0007](./0007-resilient-bootstrap.md) | Bootstrap resiliente multi-canal | Aceito |
 | [0008](./0008-identity-trust.md) | Autenticidade de identidade (chave → scan) | **Em aberto** |
-| [0009](./0009-scoring-and-donations.md) | Pontuação e doações | **Proposto** |
+| [0009](./0009-scoring-and-donations.md) | Pontuação e doações: revezamento com pontos | Aceito |
 
 ## Legenda de status
 

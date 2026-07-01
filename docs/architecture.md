@@ -228,21 +228,22 @@ cold start falha. A resiliência vem de **multiplicidade de canais** (ver
 
 Ver [ADR-0009](./decisions/0009-scoring-and-donations.md). Resumo do modelo:
 
-- **pontuação 100% local**, baseada no consumo real; premia quem publicou e quem
-  serviu (pesos a definir);
-- **ranking** = as scans/CLIs que *este usuário* mais consumiu (não é ranking
-  global — isso exigiria agregação central);
-- **doação direta** à scan pelo meio que ela configurar; o app **recomenda** um
-  valor mais justo com base na pontuação e nas doações anteriores;
+- **pontuação 100% local**, lastreada no **capítulo lido**: +1 ponto para quem
+  **publicou**, +1 para quem **serviu** os blocos (quem faz os dois soma 2);
+- **revezamento com card mensal**: um destinatário por mês — o topo do acumulador
+  de "pontos desde a última doação"; "doei" zera, "pular" segue acumulando. A
+  justiça é **temporal**: a doação reveza entre quem o usuário consome;
+- **doação direta** à scan ou replicador pelo meio que configurar — os metadados
+  de pagamento viajam **assinados** pela chave do destinatário;
 - **sem pagamento automático** — evita a necessidade de *provar* serviço de bytes
-  de forma trustless (problema tipo Filecoin, caro e burlável).
+  de forma trustless (problema tipo Filecoin, caro e burlável); a declaração
+  "doei" só avança a fila do próprio usuário, então não precisa ser verificável.
 
 ## 9. Questões em aberto
 
 | Tema | Status | Onde |
 |------|--------|------|
 | Autenticidade de identidade (chave → scan) | Em aberto | [ADR-0008](./decisions/0008-identity-trust.md) |
-| Pesos da pontuação e UX de doação | Proposto, a refinar | [ADR-0009](./decisions/0009-scoring-and-donations.md) |
 | Agrupar "mesma obra" de scans diferentes na UI | Adiado | §3.1 |
 | Dicas de disponibilidade no catálogo vs consulta ao vivo | Adiado (consulta ao vivo por ora) | §4.3 |
 | Bibliotecas concretas de libp2p/IPFS para KMP | A validar na PoC | [roadmap](./roadmap.md) marco 0 |
