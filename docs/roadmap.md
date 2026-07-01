@@ -49,9 +49,9 @@ Entrega valor imediato e amadurece a UX antes de acoplar a complexidade P2P.
 - experiência de leitura polida (paginação, modos de leitura, favoritos, progresso);
 - modelo de dados de obra/capítulo alinhado ao futuro `obra_id` e manifesto;
 - **registro local de leitura**: evento `{obra_id, capítulo, chave_publicador,
-  origem, timestamp}` emitido a cada capítulo lido — é a única entrada do sistema
-  de doações do marco 5 (ver [ADR-0009](./decisions/0009-scoring-and-donations.md));
-  no marco 1, `origem` é vazia (não há rede).
+  timestamp}` emitido a cada capítulo lido — insumo do sistema de doações do
+  marco 5 (ver [ADR-0009](./decisions/0009-scoring-and-donations.md)); o evento de
+  **download** (que pontua quem serviu) nasce no marco 2, junto com a rede.
 
 **Concluído quando:** um usuário lê mangás confortavelmente offline, com biblioteca
 e favoritos, sem qualquer dependência de rede.
@@ -113,8 +113,9 @@ gargalos disfarçados.
 
 **Escopo:**
 
-- **pontuação local** lastreada no capítulo lido: +1 para quem publicou, +1 para
-  quem serviu (ver [ADR-0009](./decisions/0009-scoring-and-donations.md));
+- **pontuação local** lastreada no capítulo: quem serviu pontua no download (sem
+  dedup), quem publicou pontua na leitura (1× por mês) — ver
+  [ADR-0009](./decisions/0009-scoring-and-donations.md);
 - **card mensal de doação**: um destinatário por vez — o topo do acumulador de
   pontos desde a última doação; "doei" zera, "pular" segue acumulando;
 - **doação direta** pelo meio configurado por cada um, com metadados de pagamento

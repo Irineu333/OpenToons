@@ -228,8 +228,10 @@ cold start falha. A resiliência vem de **multiplicidade de canais** (ver
 
 Ver [ADR-0009](./decisions/0009-scoring-and-donations.md). Resumo do modelo:
 
-- **pontuação 100% local**, lastreada no **capítulo lido**: +1 ponto para quem
-  **publicou**, +1 para quem **serviu** os blocos (quem faz os dois soma 2);
+- **pontuação 100% local**, lastreada no **capítulo**: quem **serviu** pontua a
+  cada **download** (sem dedup — banda gasta é serviço real, inclusive prefetch);
+  quem **publicou** pontua a cada capítulo **lido** (1× por mês); quem faz os
+  dois soma;
 - **revezamento com card mensal**: um destinatário por mês — o topo do acumulador
   de "pontos desde a última doação"; "doei" zera, "pular" segue acumulando. A
   justiça é **temporal**: a doação reveza entre quem o usuário consome;

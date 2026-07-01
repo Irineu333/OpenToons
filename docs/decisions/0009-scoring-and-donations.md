@@ -25,17 +25,25 @@ decisão:
 em vez de dividir um valor entre vários destinatários num mês, a doação **reveza**
 entre quem o usuário consome, proporcionalmente ao consumo, ao longo dos meses.
 
-### Pontos — moeda única, lastreada no capítulo lido
+### Pontos — cada papel ancorado no próprio ato
 
-- 1 capítulo **lido** = **+1 ponto** para quem **publicou** (a chave que assinou o
-  manifesto) e **+1 ponto** para quem **serviu** os blocos daquele capítulo;
-- a mesma entidade que publicou **e** serviu soma os dois papéis (**2 pontos**) —
-  incentiva a scan a manter o próprio nó no ar;
-- capítulo baixado mas **nunca lido não pontua ninguém** (consumo real);
-- capítulo servido por **vários peers**: o ponto de serviço é rateado pela fração
-  de bytes entregue por cada um;
-- **dedup**: cada `(obra, capítulo)` conta no máximo **1× por mês** (reler não
-  pontua de novo).
+A moeda única continua sendo o **capítulo**, mas cada papel pontua pelo ato que
+efetivamente pratica: **serviço = bytes entregues; publicação = leitura**.
+
+- **Serviço ancora no download, sem dedup**: quem **serviu** os blocos ganha
+  **+1 ponto no momento do download**, tenha o capítulo sido lido ou não — o custo
+  de banda é real todas as vezes. Baixar, apagar e baixar de novo pontua a cada
+  entrega. Capítulo servido por **vários peers**: o ponto é rateado pela fração de
+  bytes entregue por cada um.
+- **Publicação ancora na leitura, com dedup mensal**: quem **publicou** (a chave
+  que assinou o manifesto) ganha **+1 ponto quando o capítulo é lido**, no máximo
+  **1× por `(obra, capítulo)` por mês**. Reler em outro mês pontua de novo — a
+  obra entrega valor a cada leitura; reler no mesmo mês, não.
+- A mesma entidade que publicou **e** serviu soma os dois papéis — incentiva a
+  scan a manter o próprio nó no ar.
+- Corolários: capítulo **baixado mas nunca lido** pontua só quem serviu; capítulo
+  **relido do cache** pontua só quem publicou; releitura que **re-baixa** (cache
+  expirado) pontua os dois.
 
 ### Revezamento — fila única, um destinatário por mês
 
@@ -74,8 +82,9 @@ proporcional ao consumo, descontando doações anteriores.
 Somar os dois papéis com uma constante de ponderação exigia comparar unidades
 incomensuráveis (capítulos criados × bytes servidos).
 
-- **Por que dissolvida:** a moeda única "capítulo lido" elimina o parâmetro — cada
-  papel vale 1 ponto por capítulo lido, e quem exerce os dois soma naturalmente.
+- **Por que dissolvida:** a moeda única "capítulo" elimina o parâmetro — cada
+  papel vale 1 ponto por capítulo (servido ou lido), e quem exerce os dois soma
+  naturalmente.
 
 ### Ranking global agregado — descartada
 
@@ -96,18 +105,24 @@ O app pagaria automaticamente com base em prova de bytes servidos.
 
 ## Consequências
 
-- **O marco 1 (leitor offline) precisa emitir o evento de leitura** — é a única
-  entrada do sistema: `{obra_id, capítulo, chave_publicador, origem: [(peer,
-  fração_bytes)], timestamp}`. No marco 1 `origem` é vazia (não há rede); a
-  estrutura já nasce pronta para o marco 2. Sem isso, o marco 5 estreia com
-  histórico zero.
+- **Dois eventos locais independentes** alimentam o sistema:
+  - **leitura** `{obra_id, capítulo, chave_publicador, timestamp}` — nasce no
+    **marco 1** (leitor offline); sem ele, o marco 5 estreia com histórico zero;
+  - **download** `{obra_id, capítulo, peers: [(peer, fração_bytes)], timestamp}` —
+    nasce no **marco 2**, junto com a rede.
+- **Prefetch pontua**: baixar capítulos antecipadamente (funcionalidade prevista
+  do app) é serviço real — banda gasta —, então pontua quem serviu mesmo que a
+  leitura nunca aconteça. Um usuário que baixa mais do que lê favorece
+  replicadores sobre scans; aceitável, porque o serviço aconteceu e só a
+  recomendação do próprio usuário é afetada.
 - **Metadados de pagamento devem ser assinados** pela chave do destinatário — scan
   **ou replicador** (ex.: no manifesto, atualizáveis via `seq`; ver
   [ADR-0003](./0003-content-model.md)). Sem isso, um nó intermediário poderia
   substituir o endereço de pagamento pelo dele.
 - **Resistência a abuso é estrutural:** como o score é local e por consumidor, para
-  inflar pontos junto a um usuário é preciso de fato **servi-lo capítulos que ele
-  leia** — exatamente o comportamento desejado. O vetor restante é o impostor que
+  inflar pontos junto a um usuário é preciso de fato **entregar-lhe capítulos que o
+  cliente dele pediu** (o cliente só baixa o que solicita) — exatamente o
+  comportamento desejado. O vetor restante é o impostor que
   republica conteúdo copiado sob a própria chave e farma pontos de *publicador* —
   esse é o problema de identidade do [ADR-0008](./0008-identity-trust.md), não
   deste ADR.
