@@ -15,7 +15,7 @@ teto de armazenamento (ver [ADR-0002](./decisions/0002-three-planes.md)).
 
 ```
 ┌─ PLANO DE ANÚNCIO ─ aberto, todos ──────────────────────────────────┐
-│  DHT / gossip: "existe a scan X; head do manifesto = seq 42"          │
+│  DHT / gossip: "existe o publicador X; head do manifesto = seq 42"    │
 │  Barato. Ninguém precisa de permissão para anunciar.                  │
 ├─ PLANO DE CATÁLOGO ─ leve, replicável por todos ────────────────────┤
 │  Manifesto assinado: obras, capítulos → CID, metadados, seq.         │
@@ -29,8 +29,7 @@ teto de armazenamento (ver [ADR-0002](./decisions/0002-three-planes.md)).
 
 Regra central: **anunciar/descobrir é aberto; espelhar/guardar é opt-in por nó.**
 A "federação" emerge como um grafo de quem-espelha-quem, decidido localmente por
-cada scan. É isso que permite que uma scan rejeitada por uns continue viva por
-outros.
+cada publicador. Não há autoridade global: cada nó escolhe o que replica.
 
 ## 2. Topologia da rede
 
@@ -44,7 +43,7 @@ outros.
         ┌────────────────────────────────────┼────────────────────────────────────┐
         │                                    │                                    │
    ┌────▼────┐        DHT server        ┌────▼────┐        DHT server        ┌────▼────┐
-   │ Scan A  │◀── replica (escolha) ───▶│ Scan B  │◀── replica (escolha) ───▶│  CLI C  │
+   │ Pub. A  │◀── replica (escolha) ───▶│ Pub. B  │◀── replica (escolha) ───▶│  CLI C  │
    │ desktop │    IPFS/Bitswap blocos   │ desktop │    IPFS/Bitswap blocos   │  (VPS)  │
    │ pública │                          │ pública │                          │ pública │
    └────▲────┘                          └────▲────┘                          └────▲────┘
@@ -59,8 +58,8 @@ outros.
                                     └───────────────────┘
 ```
 
-- **Nós plenos** (scans e CLIs) são **DHT servers**, têm **endereço público** e
-  guardam/servem/roteiam conteúdo.
+- **Nós plenos** (publicadores e CLIs) são **DHT servers**, têm **endereço
+  público** e guardam/servem/roteiam conteúdo.
 - **Nós leves** (mobile) são **DHT clients**: fazem consultas e baixam direto dos
   detentores, mas não guardam nada para ninguém nem aceitam conexões de entrada.
 
@@ -70,59 +69,61 @@ Ver [ADR-0003](./decisions/0003-content-model.md) para o racional completo.
 
 ### 3.1. Identidade
 
-- Cada **scan** é um par de chaves (ex.: Ed25519). A chave pública **é** a
-  identidade da scan na rede.
-- Cada **obra** tem um identificador estável: `obra_id = (chave_da_scan, UUID)`.
+- Cada **publicador** é um par de chaves (ex.: Ed25519). A chave pública **é** a
+  identidade do publicador na rede.
+- Cada **obra** tem um identificador estável: `obra_id = (chave_do_publicador, UUID)`.
   Favoritar e seguir apontam para o `obra_id`, que **sobrevive a novos capítulos**.
 - O **conteúdo** (páginas) é endereçado por **CID** (imutável, muda a cada
   alteração de bytes). O `obra_id` é estável; o CID não. São coisas distintas.
 
-> **Consequência de projeto:** "Berserk da Scan A" e "Berserk da Scan B" são
-> entidades **diferentes** (identidade é por scan). Agrupar a "mesma obra" de scans
-> distintas na UI é um problema de apresentação deixado para depois.
+> **Consequência de projeto:** a mesma obra publicada pelo Publicador A e pelo
+> Publicador B são entidades **diferentes** (identidade é por publicador). Agrupar
+> a "mesma obra" de publicadores distintos na UI é um problema de apresentação
+> deixado para depois.
 
 ### 3.2. Manifesto assinado
 
 O cliente **só precisa da última versão**, não do histórico. Portanto o estado de
-uma scan é um **manifesto assinado do estado atual** (e não um log que o cliente
-precise reproduzir):
+um publicador é um **manifesto assinado do estado atual** (e não um log que o
+cliente precise reproduzir):
 
 ```
-MANIFESTO DA SCAN  (assinado com a chave da scan)
+MANIFESTO DO PUBLICADOR  (assinado com a chave do publicador)
   seq: 42                              ← sequência monotônica (anti-rollback)
   obras:
-    - id: uuid-berserk
+    - id: uuid-obra-1
       meta: { título, capa → CID, tags, ... }
       capítulos: [ { n: 1 → CID }, { n: 2 → CID }, ... ]   ← apenas os VIVOS
-    - id: uuid-outra
+    - id: uuid-obra-2
       ...
-  assinatura: sig(chave_da_scan)
+  assinatura: sig(chave_do_publicador)
 ```
 
 Dois mecanismos de segurança embutidos:
 
 - **Anti-falsificação:** o manifesto é assinado. Um impostor não consegue produzir
-  um manifesto válido para a chave de outra scan.
-- **Anti-rollback:** sem o `seq`, um censor poderia servir um manifesto *antigo*
-  (legítimo e assinado!) escondendo capítulos novos. O cliente memoriza o maior
-  `seq` já visto por scan e **rejeita versões menores**.
+  um manifesto válido para a chave de outro publicador.
+- **Anti-rollback:** sem o `seq`, um nó malicioso poderia servir um manifesto
+  *antigo* (legítimo e assinado!) escondendo capítulos novos. O cliente memoriza o
+  maior `seq` já visto por publicador e **rejeita versões menores**.
 
 ### 3.3. Alteração e exclusão
 
-Scans modificam suas obras livremente publicando um novo manifesto assinado.
+Publicadores modificam suas obras livremente publicando um novo manifesto assinado.
 **Replicar e aceitar a modificação é uma escolha de cada nó** (ver
 [ADR-0004](./decisions/0004-deletion-semantics.md)):
 
 ```
-scan publica "remover cap.5" (novo manifesto, seq maior, sem o cap.5)
+publicador publica "remover cap.5" (novo manifesto, seq maior, sem o cap.5)
      │
      ├─ nós honestos: atualizam o catálogo, param de anunciar o CID   ✅
-     └─ nó-arquivo:   escolhe preservar e continua servindo o CID     ✅ (é a resistência à censura)
+     └─ nó-arquivo:   escolhe preservar e continua servindo o CID     ✅ (escolha local do nó)
 ```
 
-Em rede replicada resistente à censura, **exclusão real é impossível** — e isso é
-intencional. "Excluir" significa **despublicar**: sai do catálogo da scan, mas os
-bytes podem sobreviver em quem escolher preservá-los.
+Em rede replicada sem autoridade central, **exclusão real é impossível** — é um
+limite técnico intrínseco, não uma garantia oferecida a alguém. "Excluir" significa
+**despublicar**: sai do catálogo do publicador, mas os bytes podem sobreviver em
+quem escolher preservá-los.
 
 ## 4. Descoberta e roteamento
 
@@ -160,11 +161,11 @@ Como cada nó pleno replica os manifestos dos outros, **cada nó tem a união do
 catálogos**. Logo, *qualquer* nó pleno responde "o que existe na rede":
 
 ```
-mobile ── "buscar 'Berserk'" ──▶ nó pleno (já tem o catálogo global)
-                                   └─▶ resultados de todas as scans conhecidas
+mobile ── "buscar 'Obra X'" ──▶ nó pleno (já tem o catálogo global)
+                                  └─▶ resultados de todos os publicadores conhecidos
 ```
 
-**Mitigação de censura de catálogo:** um nó malicioso pode *omitir* resultados
+**Mitigação de omissão de catálogo:** um nó malicioso pode *omitir* resultados
 (não pode falsificar — assinatura). O cliente consulta **2–3 nós e mescla**.
 
 ### 4.3. Roteamento de conteúdo (quem tem o arquivo)
@@ -175,7 +176,7 @@ o mobile precisa achar *quem o guarda* e então baixar **direto do detentor**
 
 ```
 1. mobile ─▶ consulta a DHT: "quem provê CID_cap42?"   (roteamento delegado, barato)
-2. DHT     ─▶ "Scan B e CLI C têm"                      (provider records)
+2. DHT     ─▶ "Pub. B e CLI C têm"                      (provider records)
 3. mobile ─▶ disca B/C direto e baixa os blocos         (retrieval direto, saída)
 ```
 
@@ -187,16 +188,17 @@ o mobile precisa achar *quem o guarda* e então baixar **direto do detentor**
 
 Ver [ADR-0006](./decisions/0006-nat-and-reachability.md).
 
-O NAT que importa é o **das scans** (precisam ser discáveis), não o do mobile:
+O NAT que importa é o **dos publicadores** (precisam ser discáveis), não o do
+mobile:
 
 ```
-mobile (atrás de NAT) ── disca ─▶ scan (pública)     ✅ conexão de saída, livre
-mobile (atrás de NAT) ◀─ disca ── qualquer um         ❌ entrada bloqueada (e ok: mobile não serve)
+mobile (atrás de NAT) ── disca ─▶ publicador (público)  ✅ conexão de saída, livre
+mobile (atrás de NAT) ◀─ disca ── qualquer um            ❌ entrada bloqueada (e ok: mobile não serve)
 ```
 
-- **Scans/CLIs** têm endereço público **configurado manualmente** pelo operador
-  (port forwarding no roteador, IP público ou VPS). **Furo automático de NAT**
-  (AutoNAT + DCUtR + circuit relay v2) **não é requisito** — fica adiado para
+- **Publicadores/CLIs** têm endereço público **configurado manualmente** pelo
+  operador (port forwarding no roteador, IP público ou VPS). **Furo automático de
+  NAT** (AutoNAT + DCUtR + circuit relay v2) **não é requisito** — fica adiado para
   avaliação no marco 4, com dados da operação real.
 - **Nada fica no caminho de leitura do mobile.** O mobile só faz conexões de saída
   direto ao detentor; não delega retrieval a ninguém.
@@ -206,16 +208,16 @@ mobile (atrás de NAT) ◀─ disca ── qualquer um         ❌ entrada bloqu
 - **Integridade/autenticidade do conteúdo:** todo manifesto e todo conteúdo é
   assinado; o cliente **sempre verifica** antes de confiar. Um nó malicioso não
   forja — no máximo omite (mitigado por consulta múltipla).
-- **Autenticidade de identidade (chave → scan):** vincular uma chave pública à
-  scan "real" (evitar impostor que copia nome e capa) é um **problema em aberto**.
-  Candidatos: TOFU, registro assinado no bootstrap, teia de confiança. Ver
-  [ADR-0008](./decisions/0008-identity-trust.md).
+- **Autenticidade de identidade (chave → publicador):** vincular uma chave pública
+  ao publicador "real" (evitar impostor que copia nome e capa) é um **problema em
+  aberto**. Candidatos: TOFU, registro assinado no bootstrap, teia de confiança.
+  Ver [ADR-0008](./decisions/0008-identity-trust.md).
 
 ## 7. Resiliência do bootstrap
 
-Mesmo com tudo descentralizado, se *todos* os nós de bootstrap forem bloqueados o
-cold start falha. A resiliência vem de **multiplicidade de canais** (ver
-[ADR-0007](./decisions/0007-resilient-bootstrap.md)):
+Mesmo com tudo descentralizado, se *todos* os nós de bootstrap ficarem
+indisponíveis o cold start falha. A resiliência vem de **multiplicidade de canais**
+(ver [ADR-0007](./decisions/0007-resilient-bootstrap.md)):
 
 ```
 - lista assinada distribuída por N canais (git, IPNS, pastebin, telegram)
@@ -236,8 +238,8 @@ Ver [ADR-0009](./decisions/0009-scoring-and-donations.md). Resumo do modelo:
 - **revezamento com card mensal**: um destinatário por mês — o topo do acumulador
   de "pontos desde a última doação"; "doei" zera, "pular" segue acumulando. A
   justiça é **temporal**: a doação reveza entre quem o usuário consome;
-- **doação direta** à scan ou replicador pelo meio que configurar — os metadados
-  de pagamento viajam **assinados** pela chave do destinatário;
+- **doação direta** ao publicador ou replicador pelo meio que configurar — os
+  metadados de pagamento viajam **assinados** pela chave do destinatário;
 - **sem pagamento automático** — evita a necessidade de *provar* serviço de bytes
   de forma trustless (problema tipo Filecoin, caro e burlável); a declaração
   "doei" só avança a fila do próprio usuário, então não precisa ser verificável.
@@ -246,8 +248,8 @@ Ver [ADR-0009](./decisions/0009-scoring-and-donations.md). Resumo do modelo:
 
 | Tema | Status | Onde |
 |------|--------|------|
-| Autenticidade de identidade (chave → scan) | Em aberto | [ADR-0008](./decisions/0008-identity-trust.md) |
-| Agrupar "mesma obra" de scans diferentes na UI | Adiado | §3.1 |
+| Autenticidade de identidade (chave → publicador) | Em aberto | [ADR-0008](./decisions/0008-identity-trust.md) |
+| Agrupar "mesma obra" de publicadores diferentes na UI | Adiado | §3.1 |
 | Dicas de disponibilidade no catálogo vs consulta ao vivo | Adiado (consulta ao vivo por ora) | §4.3 |
 | Bibliotecas concretas de libp2p/IPFS para KMP | A validar na PoC | [roadmap](./roadmap.md) marco 0 |
 | Furo automático de NAT (AutoNAT/DCUtR/relay v2) | Adiado (avaliação no marco 4) | [ADR-0006](./decisions/0006-nat-and-reachability.md) |

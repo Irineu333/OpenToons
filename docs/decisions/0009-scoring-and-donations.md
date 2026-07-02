@@ -4,10 +4,10 @@
 
 ## Contexto
 
-A rede é sustentada por voluntários (scans e replicadores). O incentivo escolhido é
-a **doação direta**, guiada por uma **pontuação** que reflita o consumo real do
-usuário e premie quem publicou e quem serviu o conteúdo. Restrições que moldaram a
-decisão:
+A rede é sustentada por voluntários (publicadores e replicadores). O incentivo
+escolhido é a **doação direta**, guiada por uma **pontuação** que reflita o consumo
+real do usuário e premie quem publicou e quem serviu o conteúdo. Restrições que
+moldaram a decisão:
 
 1. **Privacidade / centralização:** um "ranking global" exigiria agregar o consumo
    de todos em algum lugar — uma forma de centralização e um risco de privacidade.
@@ -17,7 +17,7 @@ decisão:
 3. **Comportamento real do doador:** a doação acontece **fora da rede** (Pix,
    Patreon…), então o app **não consegue verificá-la**; o usuário doa para **no
    máximo um destinatário por mês** e não vai se dar o trabalho de **dividir** a
-   doação entre várias scans.
+   doação entre vários publicadores.
 
 ## Decisão
 
@@ -39,18 +39,18 @@ efetivamente pratica: **serviço = bytes entregues; publicação = leitura**.
   que assinou o manifesto) ganha **+1 ponto quando o capítulo é lido**, no máximo
   **1× por `(obra, capítulo)` por mês**. Reler em outro mês pontua de novo — a
   obra entrega valor a cada leitura; reler no mesmo mês, não.
-- A mesma entidade que publicou **e** serviu soma os dois papéis — incentiva a
-  scan a manter o próprio nó no ar.
+- A mesma entidade que publicou **e** serviu soma os dois papéis — incentiva o
+  publicador a manter o próprio nó no ar.
 - Corolários: capítulo **baixado mas nunca lido** pontua só quem serviu; capítulo
   **relido do cache** pontua só quem publicou; releitura que **re-baixa** (cache
   expirado) pontua os dois.
 
 ### Revezamento — fila única, um destinatário por mês
 
-- cada entidade (chave de scan ou peer replicador) tem um **acumulador local**:
-  pontos **desde a última doação a ela** (ou desde sempre, se nunca houve);
+- cada entidade (chave de publicador ou peer replicador) tem um **acumulador
+  local**: pontos **desde a última doação a ela** (ou desde sempre, se nunca houve);
 - uma vez por mês (mês civil) o app exibe um **card com um único destinatário**: o
-  topo do acumulador — scans e replicadores competem na **mesma fila**;
+  topo do acumulador — publicadores e replicadores competem na **mesma fila**;
 - **"Doei"** zera o acumulador daquela entidade; **"Pular"** mantém acumulando;
 - o **valor doado é irrelevante para a mecânica** (R$ 1 e R$ 100 avançam a fila
   igual) — doação é generosidade, não fatura; o *quanto* é 100% do humano;
@@ -59,10 +59,10 @@ efetivamente pratica: **serviço = bytes entregues; publicação = leitura**.
 
 ### Explicabilidade > precisão
 
-A recomendação deve ser reconstituível pelo usuário em uma frase — ex.: *"a Scan A
-te entregou 42 capítulos e publicou 38 deles (84 pontos) sem receber nada"*.
-Qualquer sofisticação (decaimento contínuo, ponderações) que quebre isso custa mais
-do que vale.
+A recomendação deve ser reconstituível pelo usuário em uma frase — ex.: *"o
+Publicador A te entregou 42 capítulos e publicou 38 deles (84 pontos) sem receber
+nada"*. Qualquer sofisticação (decaimento contínuo, ponderações) que quebre isso
+custa mais do que vale.
 
 ## Alternativas consideradas
 
@@ -71,11 +71,12 @@ do que vale.
 O usuário definiria um orçamento mensal e o app recomendaria a **divisão**
 proporcional ao consumo, descontando doações anteriores.
 
-- **Por que descartada:** irreal na prática — o usuário doa para no máximo uma scan
-  por mês e não divide a doação em vários pagamentos; o desconto de "já doado"
-  dependia de auto-declaração **verídica**, que o app não tem como verificar,
-  tornando a contabilidade frágil; e exigia um conceito artificial de "orçamento".
-  O revezamento entrega a mesma justiça ao longo do tempo com um pagamento por mês.
+- **Por que descartada:** irreal na prática — o usuário doa para no máximo um
+  publicador por mês e não divide a doação em vários pagamentos; o desconto de "já
+  doado" dependia de auto-declaração **verídica**, que o app não tem como
+  verificar, tornando a contabilidade frágil; e exigia um conceito artificial de
+  "orçamento". O revezamento entrega a mesma justiça ao longo do tempo com um
+  pagamento por mês.
 
 ### Pesos publicador × servidor num score único — dissolvida
 
@@ -113,12 +114,15 @@ O app pagaria automaticamente com base em prova de bytes servidos.
 - **Prefetch pontua**: baixar capítulos antecipadamente (funcionalidade prevista
   do app) é serviço real — banda gasta —, então pontua quem serviu mesmo que a
   leitura nunca aconteça. Um usuário que baixa mais do que lê favorece
-  replicadores sobre scans; aceitável, porque o serviço aconteceu e só a
+  replicadores sobre publicadores; aceitável, porque o serviço aconteceu e só a
   recomendação do próprio usuário é afetada.
-- **Metadados de pagamento devem ser assinados** pela chave do destinatário — scan
-  **ou replicador** (ex.: no manifesto, atualizáveis via `seq`; ver
+- **Metadados de pagamento devem ser assinados** pela chave do destinatário —
+  publicador **ou replicador** (ex.: no manifesto, atualizáveis via `seq`; ver
   [ADR-0003](./0003-content-model.md)). Sem isso, um nó intermediário poderia
   substituir o endereço de pagamento pelo dele.
+- **O meio de pagamento é escolha do destinatário; o app suporta múltiplos meios.**
+  O metadado permanece no manifesto (é intrinsecamente associável ao publicador,
+  então separá-lo traria ganho marginal e não compensa a complexidade).
 - **Resistência a abuso é estrutural:** como o score é local e por consumidor, para
   inflar pontos junto a um usuário é preciso de fato **entregar-lhe capítulos que o
   cliente dele pediu** (o cliente só baixa o que solicita) — exatamente o

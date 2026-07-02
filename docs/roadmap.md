@@ -5,7 +5,7 @@ Este roadmap descreve **marcos** (milestones), não uma lista de changes. Cada m
 implementação de cada marco será quebrada em propostas de mudança (OpenSpec) no
 momento apropriado.
 
-A ordem é deliberada: começamos entregando **valor isolado** (um leitor de mangás
+A ordem é deliberada: começamos entregando **valor isolado** (um leitor de obras
 que funciona sozinho) e só então introduzimos a complexidade da rede, reduzindo o
 risco a cada passo.
 
@@ -41,7 +41,7 @@ bateria/dados do DHT client.
 
 ## Marco 1 — Leitor mobile completo (offline)
 
-**Objetivo:** um leitor de mangás mobile de primeira linha, **sem rede ainda**.
+**Objetivo:** um leitor de obras mobile de primeira linha, **sem rede ainda**.
 Entrega valor imediato e amadurece a UX antes de acoplar a complexidade P2P.
 
 **Escopo:**
@@ -56,27 +56,27 @@ Entrega valor imediato e amadurece a UX antes de acoplar a complexidade P2P.
   marco 5 (ver [ADR-0009](./decisions/0009-scoring-and-donations.md)); o evento de
   **download** (que pontua quem serviu) nasce no marco 2, junto com a rede.
 
-**Concluído quando:** um usuário lê mangás confortavelmente offline, com biblioteca
+**Concluído quando:** um usuário lê obras confortavelmente offline, com biblioteca
 e favoritos, sem qualquer dependência de rede.
 
 ## Marco 2 — App desktop, v1 da rede e módulo de rede no mobile
 
-**Objetivo:** a rede nasce. As scans passam a publicar; o leitor passa a consumir
-da malha.
+**Objetivo:** a rede nasce. Os publicadores passam a publicar; o leitor passa a
+consumir da malha.
 
 **Escopo:**
 
-- **app desktop** para scans: publicar e assinar obras, gerenciar a scan,
+- **app desktop** para publicadores: publicar e assinar obras, gerenciar o perfil,
   configurar teto de armazenamento, atuar como **nó pleno** (DHT server, público);
 - **rede v1:** planos de anúncio, catálogo (manifesto assinado + `seq`) e conteúdo
   (troca de blocos); descoberta de nós via bootstrap + DHT + PEX + cache;
-- **replicação entre scans** (opt-in, com teto);
+- **replicação entre publicadores** (opt-in, com teto);
 - **módulo de rede no mobile:** o leitor do marco 1 ganha o **DHT client**,
   descoberta de catálogo (consulta a múltiplos nós + merge), roteamento e
   download direto do detentor, com verificação de assinatura.
 
-**Concluído quando:** uma scan publica pelo desktop e um leitor descobre, baixa,
-verifica e lê pelo mobile — sem servidor central em lugar nenhum.
+**Concluído quando:** um publicador publica pelo desktop e um leitor descobre,
+baixa, verifica e lê pelo mobile — sem servidor central em lugar nenhum.
 
 ## Marco 3 — CLI para VPS
 
@@ -89,8 +89,8 @@ dedicados, sempre online.
 - configuração de teto de armazenamento e de política de replicação;
 - operação estável de longa duração (cache quente, bom cidadão da DHT).
 
-**Concluído quando:** uma VPS sobe a CLI, entra na rede, replica conteúdo de scans
-e passa a servir leitores de forma confiável.
+**Concluído quando:** uma VPS sobe a CLI, entra na rede, replica conteúdo de
+publicadores e passa a servir leitores de forma confiável.
 
 ## Marco 4 — Polimento e v2 da rede
 
@@ -101,11 +101,14 @@ revelar.
 
 - **rede v2:** melhorias de descoberta, roteamento e replicação **balanceada
   automaticamente**; otimização de bateria/dados no mobile;
-- avaliar **furo automático de NAT** (AutoNAT/DCUtR/relay v2) para scans que não
-  conseguem configurar endereço público manualmente (ver
+- avaliar **furo automático de NAT** (AutoNAT/DCUtR/relay v2) para publicadores
+  que não conseguem configurar endereço público manualmente (ver
   [ADR-0006](./decisions/0006-nat-and-reachability.md));
 - avaliar **fallback HTTP de consumo** — Caminho B do
   [ADR-0005](./decisions/0005-mobile-client.md) — como complemento ao DHT client;
+- avaliar **transporte Tor/I2P opcional** para nós plenos (privacidade de rede);
+- **allowlist/blocklist por obra** no replicador — controle do operador sobre o que
+  replica, apoiado no identificador único de obra;
 - resiliência de bootstrap multi-canal endurecida;
 - endereçar a **autenticidade de identidade** (ver [ADR-0008](./decisions/0008-identity-trust.md), hoje em aberto);
 - observabilidade da saúde da rede (ex.: detectar centralização escondida em
@@ -142,7 +145,7 @@ central.
   ao design fino dos planos de rede.
 - A mecânica de incentivo/doação já está decidida
   ([ADR-0009](./decisions/0009-scoring-and-donations.md)), mas sua implementação
-  fica para o fim por bloquear pouco o valor central (ler e publicar de forma
-  resistente à censura) — com uma exceção: o **evento de leitura nasce no marco 1**.
-  Identidade ([ADR-0008](./decisions/0008-identity-trust.md)) segue **em aberto**
-  e é endereçada no marco 4.
+  fica para o fim por bloquear pouco o valor central (ler e publicar sem depender
+  de ponto único de falha) — com uma exceção: o **evento de leitura nasce no
+  marco 1**. Identidade ([ADR-0008](./decisions/0008-identity-trust.md)) segue
+  **em aberto** e é endereçada no marco 4.

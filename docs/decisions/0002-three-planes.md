@@ -16,8 +16,9 @@ sujeito a teto de armazenamento.
 Estratificar a arquitetura em **três planos independentes**, em vez de três redes
 concorrentes:
 
-1. **Plano de anúncio** (aberto, todos): DHT/gossip anuncia a existência de scans e
-   o `head` de seus manifestos. Barato; ninguém precisa de permissão para anunciar.
+1. **Plano de anúncio** (aberto, todos): DHT/gossip anuncia a existência de
+   publicadores e o `head` de seus manifestos. Barato; ninguém precisa de
+   permissão para anunciar.
 2. **Plano de catálogo** (leve, replicável por todos): manifesto assinado com
    obras, capítulos → CID, metadados e `seq`. Minúsculo → replicar o catálogo
    global é barato. Assinado → impossível falsificar.

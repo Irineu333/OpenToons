@@ -5,9 +5,9 @@
 ## Contexto
 
 Mesmo com todo o resto descentralizado, o **cold start** depende de conhecer ao
-menos um nó vivo. Se *todos* os nós de bootstrap forem bloqueados, um nó novo (pleno
-ou mobile) não consegue entrar na rede. A lista de bootstrap é, portanto, um
-potencial ponto único de censura se for distribuída por um só canal.
+menos um nó vivo. Se *todos* os nós de bootstrap ficarem indisponíveis, um nó novo
+(pleno ou mobile) não consegue entrar na rede. A lista de bootstrap é, portanto, um
+potencial ponto único de falha se for distribuída por um só canal.
 
 ## Decisão
 
@@ -29,12 +29,13 @@ sua integridade seja verificável.
 
 ### Lista de bootstrap por um único canal (ex.: só um domínio/servidor) — descartada
 
-- **Por que descartada:** ponto único de censura. Bloquear o canal derruba o cold
-  start de toda a rede — exatamente o que o projeto combate (P1).
+- **Por que descartada:** ponto único de falha. A indisponibilidade do canal
+  derruba o cold start de toda a rede — exatamente o tipo de dependência que o
+  projeto elimina (P1).
 
 ### Bootstrap como também raiz de confiança de identidade — descartada (separado)
 
-Usar a mesma lista de bootstrap para mapear nome → chave das scans.
+Usar a mesma lista de bootstrap para mapear nome → chave dos publicadores.
 
 - **Por que descartada aqui:** mistura dois papéis (entrada na rede × autenticidade
   de identidade) e concentra poder — quem controla a lista controlaria a identidade.

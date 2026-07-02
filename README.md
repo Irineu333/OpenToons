@@ -1,16 +1,23 @@
 # OpenToons
 
-> Rede **descentralizada** e **resistente à censura** para compartilhamento de mangás.
+> Rede **descentralizada** e **resiliente** para publicação e distribuição de obras.
 
-O OpenToons é uma rede P2P sem servidor central onde **scans** publicam conteúdo
-**assinado** e **leitores** consomem de qualquer nó da malha, com cache offline.
-O conteúdo é impossível de falsificar e inviável de remover por terceiros.
+O OpenToons é uma rede P2P sem servidor central onde **publicadores** distribuem
+conteúdo **assinado** e **leitores** consomem de qualquer nó da malha, com cache
+offline. O conteúdo é impossível de falsificar e a disponibilidade não depende de
+nenhum ponto único de falha.
+
+> **Responsabilidade.** Cada publicador responde integralmente pelo conteúdo que
+> publica e deve **deter os direitos necessários** sobre o que distribui. O
+> OpenToons é infraestrutura neutra de distribuição: não hospeda, não cura nem
+> controla o que trafega na rede — e **não se destina a contornar obrigações
+> legais** de quem publica.
 
 ## Ideia central
 
-- **P2P assimétrico, sem autoridade:** *scans* (desktop) e *replicadores* (CLI)
-  sustentam a rede como nós plenos; *leitores* (mobile) apenas consomem, como nós
-  leves — sem precisar servir conteúdo.
+- **P2P assimétrico, sem autoridade:** *publicadores* (desktop) e *replicadores*
+  (CLI) sustentam a rede como nós plenos; *leitores* (mobile) apenas consomem, como
+  nós leves — sem precisar servir conteúdo.
 - **Tudo assinado:** o cliente sempre verifica a assinatura; impostores não forjam.
 - **Três planos:** anúncio (aberto) · catálogo (leve, assinado, replicável) ·
   conteúdo (pesado, réplica opt-in com teto).
@@ -22,8 +29,8 @@ O conteúdo é impossível de falsificar e inviável de remover por terceiros.
 
 | App | Público | Papel | Função |
 |-----|---------|-------|--------|
-| **Desktop** | Scans | Nó pleno | Publicar, gerenciar, replicar, servir |
-| **Mobile** | Leitores | Nó leve | Ler mangás, cache offline, consumir a rede |
+| **Desktop** | Publicadores | Nó pleno | Publicar, gerenciar, replicar, servir |
+| **Mobile** | Leitores | Nó leve | Ler obras, cache offline, consumir a rede |
 | **CLI** | Voluntários | Nó pleno | Replicar e servir; sustentar a rede |
 
 ## Documentação

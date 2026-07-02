@@ -16,7 +16,7 @@ decisão muda, cria-se um novo ADR que supersede o anterior.
 | [0005](./0005-mobile-client.md) | Cliente mobile: Caminho A (DHT client) | Aceito |
 | [0006](./0006-nat-and-reachability.md) | NAT e alcançabilidade: endereço público configurado manualmente | Aceito |
 | [0007](./0007-resilient-bootstrap.md) | Bootstrap resiliente multi-canal | Aceito |
-| [0008](./0008-identity-trust.md) | Autenticidade de identidade (chave → scan) | **Em aberto** |
+| [0008](./0008-identity-trust.md) | Autenticidade de identidade (chave → publicador) | **Em aberto** |
 | [0009](./0009-scoring-and-donations.md) | Pontuação e doações: revezamento com pontos | Aceito |
 
 ## Legenda de status

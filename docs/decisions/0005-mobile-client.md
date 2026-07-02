@@ -37,27 +37,27 @@ consulta, o mobile conhece nós espalhados e cacheia-os para os próximos boots.
 
 ## Alternativas consideradas
 
-### Caminho B — mobile como cliente HTTP puro contra endpoints das scans — adiada (avaliação no marco 4)
+### Caminho B — mobile como cliente HTTP puro contra endpoints dos publicadores — adiada (avaliação no marco 4)
 
-Toda scan exporia uma API HTTP de manifesto/blocos; o mobile seria um cliente HTTP
-"burro" discando scans públicas diretamente.
+Todo publicador exporia uma API HTTP de manifesto/blocos; o mobile seria um cliente
+HTTP "burro" discando publicadores públicos diretamente.
 
 - **Prós:** muito mais simples de entregar; sem stack libp2p no mobile.
 - **Por que adiada:** o mobile HTTP puro **não fala DHT**, então para escapar do
-  bootstrap precisaria **reinventar PEX-sobre-HTTP** ("scan, me dá sua lista de
-  scans") — uma mini-DHT caseira e capenga. Como centralização-zero é inegociável
-  (P1/P4), o Caminho A entrega descoberta auto-balanceada nativamente. B permanece
-  tentador por simplicidade e **será avaliado no marco 4** como *fallback* de
-  consumo (complementar ao Caminho A, não substituto), com dados reais da operação
-  da rede v1.
+  bootstrap precisaria **reinventar PEX-sobre-HTTP** ("publicador, me dá sua lista
+  de publicadores") — uma mini-DHT caseira e capenga. Como centralização-zero é
+  inegociável (P1/P4), o Caminho A entrega descoberta auto-balanceada nativamente.
+  B permanece tentador por simplicidade e **será avaliado no marco 4** como
+  *fallback* de consumo (complementar ao Caminho A, não substituto), com dados
+  reais da operação da rede v1.
 
 ### Gateway HTTP central — descartada
 
 Um (ou poucos) gateway HTTP servindo o mobile.
 
-- **Por que descartada:** viola P1/P4 — o gateway vira servidor central e vetor de
-  censura. Gateways **plurais** (toda scan) seriam aceitáveis, mas isso é justamente
-  o Caminho B, com o problema de bootstrap acima.
+- **Por que descartada:** viola P1/P4 — o gateway vira servidor central e ponto
+  único de falha e de controle. Gateways **plurais** (todo publicador) seriam
+  aceitáveis, mas isso é justamente o Caminho B, com o problema de bootstrap acima.
 
 ### Mobile como nó pleno / DHT server — descartada
 

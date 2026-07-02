@@ -4,9 +4,10 @@
 
 ## Contexto
 
-Mangás mudam com o tempo (novos capítulos, correções). O endereçamento por conteúdo
+Obras mudam com o tempo (novos capítulos, correções). O endereçamento por conteúdo
 (CID) é **imutável**: o mesmo endereço sempre aponta para os mesmos bytes. Precisamos
-de um ponteiro mutável e confiável para "o estado atual de uma scan". Além disso:
+de um ponteiro mutável e confiável para "o estado atual de um publicador". Além
+disso:
 
 - cada obra precisa de um **identificador estável** para permitir favoritar/seguir;
 - o cliente **só precisa da última versão**, não do histórico;
@@ -16,13 +17,13 @@ de um ponteiro mutável e confiável para "o estado atual de uma scan". Além di
 
 **Identidade:**
 
-- cada scan é um par de chaves; a chave pública **é** sua identidade;
-- `obra_id = (chave_da_scan, UUID)` — identificador **estável**, cunhado uma vez
-  pela scan e assinado; sobrevive a novos capítulos. Favoritar/seguir aponta para
-  ele;
+- cada publicador é um par de chaves; a chave pública **é** sua identidade;
+- `obra_id = (chave_do_publicador, UUID)` — identificador **estável**, cunhado uma
+  vez pelo publicador e assinado; sobrevive a novos capítulos. Favoritar/seguir
+  aponta para ele;
 - o conteúdo é endereçado por **CID** (imutável, muda a cada alteração de bytes).
 
-**Estado da scan = manifesto assinado do estado atual:**
+**Estado do publicador = manifesto assinado do estado atual:**
 
 ```
 seq: 42                    ← sequência monotônica (anti-rollback)
@@ -30,12 +31,12 @@ obras:
   - id: uuid-...
     meta: { título, capa → CID, tags }
     capítulos: [ { n: 1 → CID }, ... ]    ← apenas os VIVOS
-assinatura: sig(chave_da_scan)
+assinatura: sig(chave_do_publicador)
 ```
 
 - **Anti-falsificação:** o manifesto é assinado; impostor não produz manifesto
   válido para chave alheia.
-- **Anti-rollback:** o cliente memoriza o maior `seq` visto por scan e rejeita
+- **Anti-rollback:** o cliente memoriza o maior `seq` visto por publicador e rejeita
   manifestos com `seq` menor (impede servir versão antiga assinada como se fosse a atual).
 
 ## Alternativas consideradas
@@ -50,7 +51,7 @@ Usar IPNS (nomes mutáveis do IPFS) para apontar sempre ao manifesto mais recent
 
 ### Log append-only completo replicado pelo cliente (estilo SSB/hypercore) — descartada
 
-O cliente reproduziria todo o histórico de eventos da scan.
+O cliente reproduziria todo o histórico de eventos do publicador.
 
 - **Por que descartada:** o cliente **só precisa da última versão**. Forçá-lo a
   reproduzir histórico é custo desnecessário de banda/armazenamento no mobile.
@@ -67,8 +68,10 @@ Usar o próprio CID como identidade da obra.
 
 ## Consequências
 
-- "Berserk da Scan A" ≠ "Berserk da Scan B": identidade é **por scan**. Agrupar a
-  mesma obra de scans distintas na UI fica para depois (problema de apresentação).
-- O cliente precisa **persistir o maior `seq` por scan** para a proteção de rollback.
+- A mesma obra publicada pelo Publicador A e pelo Publicador B são entidades
+  **diferentes**: identidade é **por publicador**. Agrupar a mesma obra de
+  publicadores distintos na UI fica para depois (problema de apresentação).
+- O cliente precisa **persistir o maior `seq` por publicador** para a proteção de
+  rollback.
 - O manifesto é a base do plano de catálogo ([ADR-0002](./0002-three-planes.md)) e
   da semântica de exclusão ([ADR-0004](./0004-deletion-semantics.md)).
