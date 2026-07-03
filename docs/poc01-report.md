@@ -7,7 +7,7 @@
 
 > **Follow-up (poc-02):** a recomendação de rede própria motivou a hipótese inversa — uma
 > camada de rede **implementada do zero, sem framework P2P**, comparada lado a lado com esta
-> stack. Ver [openspec/changes/poc-02](../openspec/changes/poc-02/proposal.md) e
+> stack. Ver [openspec/changes/archive/2026-07-03-poc-02](../openspec/changes/archive/2026-07-03-poc-02/proposal.md) e
 > [poc02-report.md](./poc02-report.md).
 
 ## Limiares fixados a priori (design D5)

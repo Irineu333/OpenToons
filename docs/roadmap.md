@@ -26,7 +26,7 @@ produto. É código descartável cujo produto é *conhecimento*, não features.
 > resultados, medições e recomendação de stack em [poc01-report.md](./poc01-report.md).
 >
 > **Extensão (poc-02, concluída — jul/2026):** a recomendação de *rede própria* do poc-01
-> motivou a change [poc-02](../openspec/changes/poc-02/proposal.md) — implementação própria
+> motivou a change [poc-02](../openspec/changes/archive/2026-07-03-poc-02/proposal.md) — implementação própria
 > da camada de rede (**sem framework P2P**) comparada ao nabu, com o mesmo critério E2E
 > fechado por outra rede. **Recomendação: stack própria (Noise XX + RPC de frames +
 > membership/gossip) para o Marco 2** — medições e matrizes em

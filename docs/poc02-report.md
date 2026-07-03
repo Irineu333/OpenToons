@@ -1,7 +1,7 @@
 # Relatório da PoC — poc-02 (camada de rede própria)
 
 > Artefato durável do poc-02. O código em `poc02/` é descartável; o que vale é este relatório.
-> Change: [openspec/changes/poc-02](../openspec/changes/poc-02/proposal.md) · Design: [design.md](../openspec/changes/poc-02/design.md)
+> Change: [openspec/changes/archive/2026-07-03-poc-02](../openspec/changes/archive/2026-07-03-poc-02/proposal.md) · Design: [design.md](../openspec/changes/archive/2026-07-03-poc-02/design.md)
 > Linha de base de comparação: [poc01-report.md](poc01-report.md) (nabu/jvm-libp2p, Marco 0).
 
 **Status: CONCLUÍDO** (jul/2026). Todos os experimentos executados — incluindo dispositivo
