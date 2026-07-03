@@ -38,6 +38,8 @@ dependencyResolutionManagement {
                 includeGroupAndSubgroups("tech.pegasys")
             }
         }
+        // .aar local do gomobile (E1a): consumido pelo app go descartável poc03/android-go
+        flatDir { dirs("poc03/go-facade") }
     }
 }
 
@@ -51,3 +53,10 @@ include(":poc01:node")
 include(":poc01:android")
 include(":poc02:net")
 include(":poc02:android")
+// poc-03: só a cola KMP/Kotlin (superfície FFI + verificação Ed25519 do lado do app, D7).
+// Os facades nativos (poc03/go-facade, poc03/rust-facade) são cross-compilados por
+// gomobile/cargo-ndk fora do Gradle — não são subprojetos. O app carrega os artefatos
+// (.so + binding Kotlin do UniFFI) copiados para poc03/android.
+include(":poc03:net")
+include(":poc03:android")
+include(":poc03:android-go")

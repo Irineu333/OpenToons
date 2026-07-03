@@ -1,0 +1,14 @@
+# Artefatos de build nativo do poc-03 — DESCARTÁVEIS e regeneráveis (ver README.md).
+# Não versionar: pesam GBs e saem dos comandos de build do facade.
+
+# Rust (cargo-ndk / cargo)
+rust-facade/target/
+rust-facade/jniLibs/
+rust-facade/generated-kotlin/
+
+# Go (gomobile bind)
+go-facade/opentoons-gofacade.aar
+go-facade/pkg/
+
+# .so copiados para os apps (gerados a partir dos facades)
+android/src/main/jniLibs/

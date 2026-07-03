@@ -1,0 +1,39 @@
+// Superfície FFI do poc-03 (rust-libp2p via UniFFI). Espelha o go-facade para paridade
+// (design D2/D4): E2/E3/E4 rodam sobre qualquer variante sem mudar o app.
+// A verificação Ed25519/hash NÃO está aqui — é Kotlin, fora da fronteira (D7).
+namespace facade {};
+
+[Error]
+enum FacadeError {
+  "Init",
+  "Dial",
+  "Resolve",
+  "Request",
+  "Timeout",
+};
+
+interface Node {
+  // Modo client puro (ADR-0005): descobre e disca, não serve nem roteia.
+  // Construtor SÍNCRONO: o UniFFI 0.28 não gera factory p/ construtor async no backend
+  // Kotlin (companion vazio) — o init bloqueia no runtime interno; dial/resolve/get_blocks
+  // seguem async (esses o Kotlin suporta).
+  [Throws=FacadeError]
+  constructor(string bootstrap_multiaddr);
+
+  string peer_id();
+
+  // dial (chamada FFI 1)
+  [Throws=FacadeError, Async]
+  void dial(string multiaddr_with_peer);
+
+  // resolve (chamada FFI 2) — descoberta fria via Kademlia real
+  [Throws=FacadeError, Async]
+  string resolve(string obra_id);
+
+  // get_blocks (chamada FFI 3) — Request-Response; blocos length-prefixed p/ o Kotlin fatiar
+  [Throws=FacadeError, Async]
+  bytes get_blocks(string peer_multiaddr, string cids);
+
+  // sem close() explícito: o objeto é AutoCloseable no Kotlin gerado; close()/destroy()
+  // dropam o objeto Rust → o runtime interno é dropado e o ator do swarm encerra.
+};
