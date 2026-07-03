@@ -32,12 +32,13 @@ produto. É código descartável cujo produto é *conhecimento*, não features.
 > membership/gossip) para o Marco 2** — medições e matrizes em
 > [poc02-report.md](./poc02-report.md).
 >
-> **Extensão (poc-03, em andamento — jul/2026):** para fechar o buraco honesto de que o
+> **Extensão (poc-03, concluída — jul/2026):** para fechar o buraco honesto de que o
 > poc-01 testou o libp2p só na encarnação JVM capenga (nabu), a change
-> [poc-03](../openspec/changes/poc-03/proposal.md) faz um benchmark justo do libp2p **de
+> [poc-03](../openspec/changes/archive/2026-07-03-poc-03/proposal.md) fez um benchmark justo do libp2p **de
 > referência** (go-libp2p e rust-libp2p) via **bindings nativos** (gomobile; UniFFI+cargo-ndk).
-> Produto é conhecimento comparável (go × rust; binding × Kotlin puro; referência × própria ×
-> nabu), **não** decisão de stack. Resultados e matrizes em [poc03-report.md](./poc03-report.md).
+> As duas variantes rodaram do binding ao E2E do Marco 0 no Moto g(30); **peso é o desempate:
+> rust 8–11 MB/ABI cabe no teto, go 33–35 MB/ABI estoura**. Produto é conhecimento comparável,
+> **não** decisão de stack. Resultados e matrizes em [poc03-report.md](./poc03-report.md).
 
 **Escopo:**
 

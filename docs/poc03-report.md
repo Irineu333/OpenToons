@@ -1,7 +1,7 @@
 # Relatório da PoC — poc-03 (libp2p de referência via bindings nativos)
 
 > Artefato durável do poc-03. O código em `poc03/` é descartável; o que vale é este relatório.
-> Change: [openspec/changes/poc-03](../openspec/changes/poc-03/proposal.md) · Design: [design.md](../openspec/changes/poc-03/design.md)
+> Change: [openspec/changes/archive/2026-07-03-poc-03](../openspec/changes/archive/2026-07-03-poc-03/proposal.md) · Design: [design.md](../openspec/changes/archive/2026-07-03-poc-03/design.md)
 > Linhas de base: [poc01-report.md](poc01-report.md) (nabu/jvm-libp2p) e [poc02-report.md](poc02-report.md) (stack própria).
 
 **Status: CONCLUÍDO** (jul/2026 — E1–E5 executados; ressalva única: bateria não medível no rig
