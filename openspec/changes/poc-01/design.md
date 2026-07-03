@@ -35,9 +35,9 @@ O que o Marco 0 precisa (DHT + troca de blocos) só existe pronto, na JVM, no na
 
 Uma "rede" de 2–3 nós tem DHT degenerada e não prova descoberta real. Entrar na Amino dá bootstrap resolvido, condições reais e vizinhança de verdade. Custo: os experimentos dependem de rede externa — aceitável para PoC. Se a Amino se mostrar hostil (churn, latência inviabilizando medição), E4 pode rodar em rede privada com bootstrap próprio, registrando o desvio no relatório.
 
-### D3 — Módulo Gradle `poc/` isolado no repositório
+### D3 — Módulo Gradle `poc01/` isolado no repositório
 
-Repo separado dificultaria referenciar ADRs e manter histórico junto. Um módulo `poc/` (com submódulos `poc/node` JVM e `poc/android` se necessário) mantém as dependências pesadas (nabu/Netty) fora de `shared`/`desktopApp` e é trivial de apagar após o relatório.
+Repo separado dificultaria referenciar ADRs e manter histórico junto. Um módulo `poc01/` (com submódulos `poc01/node` JVM e `poc01/android` se necessário) mantém as dependências pesadas (nabu/Netty) fora de `shared`/`desktopApp` e é trivial de apagar após o relatório.
 
 ### D4 — E3 (manifesto) em Kotlin puro, sem libp2p
 
@@ -61,7 +61,7 @@ O diagnóstico do E2/4.1 mostrou que a descoberta na Amino em escala depende de 
 - [nabu não expõe modo DHT client puro] → verificar API/configuração logo no início de E2; se só houver modo servidor, medir o custo de operar com servidor desabilitado/limitado e registrar o gap como requisito para o Marco 2 (upstream ou fork).
 - [Amino DHT instável para medição] → repetir medições em horários distintos; fallback para rede privada (D2) com o desvio documentado.
 - [Endereço público manual indisponível no ambiente do dev] → VPS barata como nó E1; o custo já está assumido no Impact da proposta.
-- [PoC "vaza" para produto (código descartável virando base)] → módulo `poc/` explicitamente fora dos módulos de produto; o relatório, não o código, é o entregável.
+- [PoC "vaza" para produto (código descartável virando base)] → módulo `poc01/` explicitamente fora dos módulos de produto; o relatório, não o código, é o entregável.
 
 ## Open Questions
 

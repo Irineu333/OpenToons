@@ -1,4 +1,6 @@
 [versions]
+# 9.0.x é a série mais nova compatível com o Gradle 9.1 do wrapper (9.1+ do AGP exige Gradle mais novo)
+agp = "9.0.1"
 androidx-lifecycle = "2.11.0-beta01"
 composeMultiplatform = "1.11.1"
 junit = "4.13.2"
@@ -21,6 +23,7 @@ compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-previ
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 
 [plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
