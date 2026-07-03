@@ -13,6 +13,7 @@ A investigação preliminar mostrou que a stack oficial ([jvm-libp2p](https://gi
 - **E2 — DHT client no Android:** app mínimo que compila o stack, resolve provider records **sem servir**, e mede custo de bateria/dados.
 - **E3 — Manifesto assinado:** assinar (Ed25519), verificar e detectar rollback via `seq`. Independente de libp2p; criptografia pura.
 - **E4 — E2E (critério do Marco 0):** capítulo assinado num "desktop" discável é descoberto e baixado por um "mobile" atrás de NAT, via DHT, com verificação de assinatura.
+- **E5 — Rede bootstrap/DHT própria** *(adicionado durante a execução, após o diagnóstico do gap de descoberta na Amino)*: rede DHT da própria OpenToons com bootstrap dedicado e **descoberta fria** — cliente que conhece só o bootstrap e o CID encontra e baixa conteúdo de um terceiro nó.
 - **Relatório final** `docs/poc-report.md` com conclusões, medições e decisão de biblioteca — o artefato durável; o código do `poc/` pode ser apagado depois.
 
 ## Capabilities

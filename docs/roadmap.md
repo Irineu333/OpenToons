@@ -22,6 +22,9 @@ risco a cada passo.
 **Objetivo:** validar as premissas técnicas mais arriscadas antes de investir no
 produto. É código descartável cujo produto é *conhecimento*, não features.
 
+> **Status: concluído** (jul/2026) — change [poc-01](../openspec/changes/poc-01/proposal.md);
+> resultados, medições e recomendação de stack em [poc-report.md](./poc-report.md).
+
 **Escopo:**
 
 - validar bibliotecas de **libp2p/IPFS** viáveis em Kotlin Multiplatform (JVM e Android);

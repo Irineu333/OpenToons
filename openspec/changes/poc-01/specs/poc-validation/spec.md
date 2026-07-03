@@ -52,6 +52,17 @@ A PoC SHALL demonstrar o critério de conclusão do Marco 0: um capítulo assina
 - **WHEN** o conteúdo baixado não corresponde ao manifesto assinado (bloco corrompido ou assinatura inválida)
 - **THEN** o app rejeita o capítulo e reporta a falha de verificação
 
+### Requirement: E5 — Rede bootstrap/DHT própria
+A PoC SHALL demonstrar a viabilidade de uma rede DHT própria da OpenToons: nós com bootstrap dedicado (sem a Amino) e **descoberta fria** — um cliente que conhece apenas o nó de bootstrap e o CID resolve o provider record de conteúdo publicado por um terceiro nó e o baixa.
+
+#### Scenario: Rede própria se forma com bootstrap dedicado
+- **WHEN** nós DHT (bootstrap, publicador e servidores) são iniciados apontando apenas para o bootstrap próprio, com endereços públicos manuais
+- **THEN** todos entram na mesma DHT e o publicador anuncia provider records do capítulo de teste
+
+#### Scenario: Descoberta fria pelo cliente
+- **WHEN** o app, em outra rede e conhecendo somente o endereço do bootstrap e o CID do manifesto, consulta a DHT
+- **THEN** ele encontra o provider record apontando o nó publicador (que nunca lhe foi informado), disca o endereço público do publicador, baixa o capítulo e verifica a assinatura
+
 ### Requirement: Relatório de conclusões
 A PoC SHALL produzir `docs/poc-report.md` registrando, para cada experimento, o resultado (positivo ou negativo), as medições, as versões usadas e a recomendação de stack para o Marco 2. Um resultado negativo documentado satisfaz este requisito.
 

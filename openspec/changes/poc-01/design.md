@@ -51,6 +51,10 @@ Antes de medir, o relatório fixa os limiares (proposta inicial: sessão de leit
 
 O risco existencial é o Android. Um spike de compilação/execução do nabu no Android (mesmo sem DHT ainda) na primeira semana decide se o resto do plano vale. E1 (nó discável JVM) é baixo risco e serve de contraparte para E2/E4.
 
+### D7 — Rede bootstrap/DHT própria como caminho principal (adicionada durante a execução)
+
+O diagnóstico do E2/4.1 mostrou que a descoberta na Amino em escala depende de correções upstream no nabu/jvm-libp2p (race no `provideBlock`, dial `/dns/`, QUIC instável em dials paralelos, hash do walk). Em vez de condicionar o Marco 0 a esses fixes, o experimento E5 valida a alternativa: **rede DHT própria da OpenToons** (bootstrap dedicado + nós plenos públicos em malha de dials de saída), onde a descoberta fria funciona ponta a ponta com os workarounds documentados. A Amino vira integração futura opcional.
+
 ## Risks / Trade-offs
 
 - [nabu não roda no Android (Netty, APIs JDK, dex)] → spike E2 primeiro; se falhar, relatório recomenda plano B (gomobile/UniFFI) e a change encerra com resultado negativo — que é um resultado válido.
