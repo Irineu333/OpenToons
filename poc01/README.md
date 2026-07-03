@@ -1,7 +1,7 @@
 # poc01/ — código DESCARTÁVEL do Marco 0
 
 Este módulo contém os experimentos da Prova de Conceito
-([openspec/changes/poc-01](../openspec/changes/poc-01/proposal.md)).
+([openspec/changes/archive/2026-07-03-poc-01](../openspec/changes/archive/2026-07-03-poc-01/proposal.md)).
 
 **O entregável do Marco 0 é o relatório — [docs/poc-report.md](../docs/poc-report.md) —
 não este código.** Nada aqui é base para os módulos de produto (`shared`, `desktopApp`);

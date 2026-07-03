@@ -22,7 +22,7 @@ risco a cada passo.
 **Objetivo:** validar as premissas técnicas mais arriscadas antes de investir no
 produto. É código descartável cujo produto é *conhecimento*, não features.
 
-> **Status: concluído** (jul/2026) — change [poc-01](../openspec/changes/poc-01/proposal.md);
+> **Status: concluído** (jul/2026) — change [poc-01](../openspec/changes/archive/2026-07-03-poc-01/proposal.md);
 > resultados, medições e recomendação de stack em [poc-report.md](./poc-report.md).
 
 **Escopo:**
