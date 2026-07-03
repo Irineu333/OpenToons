@@ -12,15 +12,19 @@ A PoC SHALL demonstrar um nó JVM (nabu) com endereço público configurado manu
 - **THEN** a conexão de entrada é aceita e o bloco anunciado é servido
 
 ### Requirement: E2 — DHT client no Android
-A PoC SHALL demonstrar o stack (nabu) rodando em um app Android que resolve provider records via DHT **sem servir conteúdo nem aceitar conexões de entrada**, conforme ADR-0005, e SHALL medir o custo de bateria e dados contra limiares definidos antes da medição.
+A PoC SHALL demonstrar o stack (nabu) rodando em um app Android que resolve provider records via DHT **sem servir conteúdo nem aceitar conexões de entrada**, conforme ADR-0005, e SHALL medir o custo de bateria e dados contra limiares definidos antes da medição. A DHT em questão é a rede alcançável pelo app (nós da PoC / rede própria — design D7); a resolução na DHT pública global (Amino) em escala está **fora do escopo** desta PoC e delegada ao Marco 2, condicionada aos fixes upstream documentados no relatório.
 
 #### Scenario: Stack compila e executa no Android
 - **WHEN** o app Android mínimo com nabu embarcado é instalado e iniciado em um dispositivo real
 - **THEN** o stack inicializa sem crash e conecta a pelo menos um nó da rede
 
 #### Scenario: Resolução de provider record sem servir
-- **WHEN** o app consulta a DHT pelo CID anunciado pelo nó E1
+- **WHEN** o app consulta a DHT da rede pelo CID anunciado pelo nó E1
 - **THEN** ele obtém o provider record apontando para o nó E1, sem aceitar conexões de entrada nem armazenar/rotear registros para terceiros
+
+#### Scenario: Limitação Amino registrada
+- **WHEN** a resolução do mesmo CID é tentada contra a DHT pública global (Amino)
+- **THEN** o resultado (positivo ou negativo) e o diagnóstico são registrados no relatório; um resultado negativo com causa identificada e plano para o Marco 2 satisfaz este cenário
 
 #### Scenario: Custo de bateria e dados medido
 - **WHEN** uma sessão simulada de 30 minutos com lookups periódicos é executada com medição ativa
