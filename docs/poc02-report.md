@@ -3,6 +3,12 @@
 > Artefato durável do poc-02. O código em `poc02/` é descartável; o que vale é este relatório.
 > Change: [openspec/changes/archive/2026-07-03-poc-02](../openspec/changes/archive/2026-07-03-poc-02/proposal.md) · Design: [design.md](../openspec/changes/archive/2026-07-03-poc-02/design.md)
 > Linha de base de comparação: [poc01-report.md](poc01-report.md) (nabu/jvm-libp2p, Marco 0).
+>
+> **Follow-up (poc-03):** esta stack própria venceu o **port JVM capenga** do libp2p (nabu). O
+> [poc-03](../openspec/changes/poc-03/proposal.md) mede o libp2p **de referência** (go/rust) via
+> bindings nativos para um benchmark justo. Dado central que ataca a vitória do poc-02 (0,96 MB de
+> APK, Kotlin puro): o binding pesa **~6 MB/ABI (rust) a ~29 MB/ABI (go)** — go estoura o teto de
+> 20 MB/ABI, rust não. Ver [poc03-report.md](./poc03-report.md).
 
 **Status: CONCLUÍDO** (jul/2026). Todos os experimentos executados — incluindo dispositivo
 físico (Moto g(30), API 31), sessão de 30 min de bateria/dados, e o E2E de descoberta fria

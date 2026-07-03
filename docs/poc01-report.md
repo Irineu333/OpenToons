@@ -9,6 +9,12 @@
 > camada de rede **implementada do zero, sem framework P2P**, comparada lado a lado com esta
 > stack. Ver [openspec/changes/archive/2026-07-03-poc-02](../openspec/changes/archive/2026-07-03-poc-02/proposal.md) e
 > [poc02-report.md](./poc02-report.md).
+>
+> **Follow-up (poc-03):** este relatório testou o libp2p só pela via JVM capenga (nabu). O
+> [poc-03](../openspec/changes/poc-03/proposal.md) fecha o buraco medindo o libp2p **de
+> referência** (go-libp2p e rust-libp2p) via bindings nativos (gomobile; UniFFI). E1 conclusivo:
+> as duas variantes cross-compilam e **rodam no mesmo Moto g(30)** — o "plano B (gomobile/UniFFI)"
+> que este relatório declarou nunca ter precisado é viável. Ver [poc03-report.md](./poc03-report.md).
 
 ## Limiares fixados a priori (design D5)
 

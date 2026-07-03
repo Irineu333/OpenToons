@@ -31,6 +31,13 @@ produto. É código descartável cujo produto é *conhecimento*, não features.
 > fechado por outra rede. **Recomendação: stack própria (Noise XX + RPC de frames +
 > membership/gossip) para o Marco 2** — medições e matrizes em
 > [poc02-report.md](./poc02-report.md).
+>
+> **Extensão (poc-03, em andamento — jul/2026):** para fechar o buraco honesto de que o
+> poc-01 testou o libp2p só na encarnação JVM capenga (nabu), a change
+> [poc-03](../openspec/changes/poc-03/proposal.md) faz um benchmark justo do libp2p **de
+> referência** (go-libp2p e rust-libp2p) via **bindings nativos** (gomobile; UniFFI+cargo-ndk).
+> Produto é conhecimento comparável (go × rust; binding × Kotlin puro; referência × própria ×
+> nabu), **não** decisão de stack. Resultados e matrizes em [poc03-report.md](./poc03-report.md).
 
 **Escopo:**
 
