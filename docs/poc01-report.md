@@ -5,6 +5,11 @@
 
 **Status: CONCLUÍDO** (jul/2026). Todos os experimentos executados, incluindo dispositivo físico, medições de bateria/dados, o E2E pelo endereço público a partir de outra rede (critério do Marco 0) e o **E5: rede bootstrap/DHT própria com descoberta fria — validada**. A descoberta na Amino em escala permanece bloqueada por bugs upstream do nabu/jvm-libp2p (todos diagnosticados, com workarounds; ver E2/4.1 e E5). **Recomendação: prosseguir para o Marco 1/2 com a stack nabu sobre rede própria da OpenToons.**
 
+> **Follow-up (poc-02):** a recomendação de rede própria motivou a hipótese inversa — uma
+> camada de rede **implementada do zero, sem framework P2P**, comparada lado a lado com esta
+> stack. Ver [openspec/changes/poc-02](../openspec/changes/poc-02/proposal.md) e
+> [poc02-report.md](./poc02-report.md).
+
 ## Limiares fixados a priori (design D5)
 
 Definidos ANTES de qualquer medição. Ajustes posteriores exigem justificativa registrada aqui.

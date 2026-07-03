@@ -23,7 +23,14 @@ risco a cada passo.
 produto. É código descartável cujo produto é *conhecimento*, não features.
 
 > **Status: concluído** (jul/2026) — change [poc-01](../openspec/changes/archive/2026-07-03-poc-01/proposal.md);
-> resultados, medições e recomendação de stack em [poc-report.md](./poc-report.md).
+> resultados, medições e recomendação de stack em [poc01-report.md](./poc01-report.md).
+>
+> **Extensão (poc-02, concluída — jul/2026):** a recomendação de *rede própria* do poc-01
+> motivou a change [poc-02](../openspec/changes/poc-02/proposal.md) — implementação própria
+> da camada de rede (**sem framework P2P**) comparada ao nabu, com o mesmo critério E2E
+> fechado por outra rede. **Recomendação: stack própria (Noise XX + RPC de frames +
+> membership/gossip) para o Marco 2** — medições e matrizes em
+> [poc02-report.md](./poc02-report.md).
 
 **Escopo:**
 
@@ -72,7 +79,11 @@ consumir da malha.
 - **app desktop** para publicadores: publicar e assinar obras, gerenciar o perfil,
   configurar teto de armazenamento, atuar como **nó pleno** (DHT server, público);
 - **rede v1:** planos de anúncio, catálogo (manifesto assinado + `seq`) e conteúdo
-  (troca de blocos); descoberta de nós via bootstrap + DHT + PEX + cache;
+  (troca de blocos); descoberta de nós via bootstrap + **membership/gossip** + PEX + cache —
+  o E3 do [poc-02](./poc02-report.md) mediu gossip × Kademlia em simulação (10–10.000 nós)
+  e recomendou gossip, com **gatilho objetivo de migração para DHT**: quando
+  `obras × réplicas` passar de ≈ 5.000 registros ativos (tráfego de re-anúncio ∝ registros,
+  não ∝ nós) ou a malha passar de ~10.000 nós plenos — reavaliar no marco 4;
 - **replicação entre publicadores** (opt-in, com teto);
 - **módulo de rede no mobile:** o leitor do marco 1 ganha o **DHT client**,
   descoberta de catálogo (consulta a múltiplos nós + merge), roteamento e

@@ -3,7 +3,7 @@
 Este módulo contém os experimentos da Prova de Conceito
 ([openspec/changes/archive/2026-07-03-poc-01](../openspec/changes/archive/2026-07-03-poc-01/proposal.md)).
 
-**O entregável do Marco 0 é o relatório — [docs/poc-report.md](../docs/poc-report.md) —
+**O entregável do Marco 0 é o relatório — [docs/poc01-report.md](../docs/poc01-report.md) —
 não este código.** Nada aqui é base para os módulos de produto (`shared`, `desktopApp`);
 este diretório pode (e deve) ser apagado após o relatório concluído, junto com as
 entradas `:poc01:*` em `settings.gradle.kts` e o repositório JitPack/Consensys usados

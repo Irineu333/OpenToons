@@ -68,11 +68,11 @@ A PoC SHALL demonstrar a viabilidade de uma rede DHT própria da OpenToons: nós
 - **THEN** ele encontra o provider record apontando o nó publicador (que nunca lhe foi informado), disca o endereço público do publicador, baixa o capítulo e verifica a assinatura
 
 ### Requirement: Relatório de conclusões
-A PoC SHALL produzir `docs/poc-report.md` registrando, para cada experimento, o resultado (positivo ou negativo), as medições, as versões usadas e a recomendação de stack para o Marco 2. Um resultado negativo documentado satisfaz este requisito.
+A PoC SHALL produzir `docs/poc01-report.md` registrando, para cada experimento, o resultado (positivo ou negativo), as medições, as versões usadas e a recomendação de stack para o Marco 2. Um resultado negativo documentado satisfaz este requisito.
 
 #### Scenario: Relatório publicado ao final
 - **WHEN** os experimentos E1–E4 terminam (com sucesso ou falha conclusiva)
-- **THEN** `docs/poc-report.md` existe com resultados por experimento, medições de E2, respostas às questões abertas do design e recomendação de biblioteca
+- **THEN** `docs/poc01-report.md` existe com resultados por experimento, medições de E2, respostas às questões abertas do design e recomendação de biblioteca
 
 #### Scenario: Falha conclusiva encerra a PoC com conhecimento
 - **WHEN** um experimento do caminho crítico falha de forma conclusiva (ex.: nabu não roda no Android)

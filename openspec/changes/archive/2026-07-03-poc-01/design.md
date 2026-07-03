@@ -15,7 +15,7 @@ Investigação preliminar (jul/2026): jvm-libp2p oficial tem transporte/Noise/go
 **Goals:**
 
 - Responder com evidência: (a) nabu roda no Android? (b) existe modo DHT client puro? (c) qual o custo de bateria/dados? (d) o E2E do Marco 0 fecha?
-- Produzir `docs/poc-report.md` — o artefato durável — com medições, conclusões e a decisão de biblioteca para o Marco 2.
+- Produzir `docs/poc01-report.md` — o artefato durável — com medições, conclusões e a decisão de biblioteca para o Marco 2.
 - Falhar rápido: o caminho crítico (E2, Android) é atacado primeiro em modo *spike*.
 
 **Non-Goals:**

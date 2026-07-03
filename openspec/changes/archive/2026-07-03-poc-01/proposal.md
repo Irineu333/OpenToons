@@ -14,7 +14,7 @@ A investigação preliminar mostrou que a stack oficial ([jvm-libp2p](https://gi
 - **E3 — Manifesto assinado:** assinar (Ed25519), verificar e detectar rollback via `seq`. Independente de libp2p; criptografia pura.
 - **E4 — E2E (critério do Marco 0):** capítulo assinado num "desktop" discável é descoberto e baixado por um "mobile" atrás de NAT, via DHT, com verificação de assinatura.
 - **E5 — Rede bootstrap/DHT própria** *(adicionado durante a execução, após o diagnóstico do gap de descoberta na Amino)*: rede DHT da própria OpenToons com bootstrap dedicado e **descoberta fria** — cliente que conhece só o bootstrap e o CID encontra e baixa conteúdo de um terceiro nó.
-- **Relatório final** `docs/poc-report.md` com conclusões, medições e decisão de biblioteca — o artefato durável; o código do `poc01/` pode ser apagado depois.
+- **Relatório final** `docs/poc01-report.md` com conclusões, medições e decisão de biblioteca — o artefato durável; o código do `poc01/` pode ser apagado depois.
 
 ## Capabilities
 
@@ -31,5 +31,5 @@ A investigação preliminar mostrou que a stack oficial ([jvm-libp2p](https://gi
 - **Código:** novo módulo Gradle `poc01/` (JVM) e alvo Android mínimo para E2/E4; nenhum código de produto (`shared`, `desktopApp`) é alterado.
 - **Dependências:** nabu (e transitivamente jvm-libp2p/Netty) apenas no módulo `poc01/`; biblioteca de crypto Ed25519 para E3.
 - **Infra:** um nó com porta pública para E1/E4 (port forwarding manual ou VPS barata); uso da DHT pública do IPFS (Amino) onde fizer sentido.
-- **Docs:** `docs/poc-report.md` novo; o roadmap (Marco 0) referencia esta change.
+- **Docs:** `docs/poc01-report.md` novo; o roadmap (Marco 0) referencia esta change.
 - **Risco assumido:** se E2 falhar (nabu não roda no Android), o plano B (bindings go/rust) é registrado no relatório como decisão a tomar — a PoC falhar *é* um resultado válido.

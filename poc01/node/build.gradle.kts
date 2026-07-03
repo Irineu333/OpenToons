@@ -3,7 +3,7 @@ plugins {
     application
 }
 
-// Módulo DESCARTÁVEL da PoC (Marco 0) — ver openspec/changes/poc-01 e docs/poc-report.md.
+// Módulo DESCARTÁVEL da PoC (Marco 0) — ver openspec/changes/poc-01 e docs/poc01-report.md.
 // Dependências pesadas (nabu/Netty) ficam confinadas aqui; nada de código de produto.
 
 kotlin {

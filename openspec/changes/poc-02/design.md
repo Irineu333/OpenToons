@@ -2,7 +2,7 @@
 
 ## Context
 
-O poc-01 ([relatório](../../../docs/poc-report.md)) validou a stack nabu/jvm-libp2p em condições reais, mas expôs seu custo: quatro bugs upstream diagnosticados, workarounds em todas as camadas, upstream sem builds utilizáveis no JitPack e recomendação final de **rede própria** — o que elimina o principal valor do libp2p (interop com IPFS/Amino). A Amino, por sua vez, só era necessária para validar comportamento em escala que uma rede pequena não exibe; esse papel pode ser cumprido por simulação.
+O poc-01 ([relatório](../../../docs/poc01-report.md)) validou a stack nabu/jvm-libp2p em condições reais, mas expôs seu custo: quatro bugs upstream diagnosticados, workarounds em todas as camadas, upstream sem builds utilizáveis no JitPack e recomendação final de **rede própria** — o que elimina o principal valor do libp2p (interop com IPFS/Amino). A Amino, por sua vez, só era necessária para validar comportamento em escala que uma rede pequena não exibe; esse papel pode ser cumprido por simulação.
 
 A arquitetura da OpenToons dispensa, por decisão de design, a maior parte do que o libp2p resolve:
 

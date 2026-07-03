@@ -3,7 +3,7 @@ plugins {
 }
 
 // Módulo DESCARTÁVEL da PoC (Marco 0) — spike E2: nabu no Android.
-// Ver openspec/changes/poc-01 e docs/poc-report.md.
+// Ver openspec/changes/poc-01 e docs/poc01-report.md.
 
 android {
     namespace = "org.opentoons.poc.android"

@@ -5,7 +5,7 @@ Ordem guiada pelo design D6: spike Android (caminho crítico) primeiro; E3 pode 
 ## 1. Setup
 
 - [x] 1.1 Criar módulo Gradle `poc01/node` (JVM) com dependência do nabu e verificar que compila
-- [x] 1.2 Criar esqueleto de `docs/poc-report.md` com os limiares de bateria/dados fixados a priori (design D5) e as questões abertas do design a responder
+- [x] 1.2 Criar esqueleto de `docs/poc01-report.md` com os limiares de bateria/dados fixados a priori (design D5) e as questões abertas do design a responder
 
 ## 2. Spike E2 — nabu no Android (caminho crítico)
 
@@ -40,7 +40,7 @@ Ordem guiada pelo design D6: spike Android (caminho crítico) primeiro; E3 pode 
 
 ## 7. Relatório e encerramento
 
-- [x] 7.1 Completar `docs/poc-report.md`: resultado por experimento, medições, versões usadas, respostas às questões abertas (modo client, minSdk, tamanho do APK, licenças) e recomendação de stack para o Marco 2
+- [x] 7.1 Completar `docs/poc01-report.md`: resultado por experimento, medições, versões usadas, respostas às questões abertas (modo client, minSdk, tamanho do APK, licenças) e recomendação de stack para o Marco 2
 - [x] 7.2 Atualizar referências (roadmap Marco 0 → relatório) e marcar o código de `poc01/` como descartável no README do módulo
 
 ## 8. E5 — Rede bootstrap/DHT própria (adicionado após o diagnóstico do gap Amino; relatório atualizado ao final)
