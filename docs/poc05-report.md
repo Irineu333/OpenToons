@@ -43,12 +43,12 @@
 | Métrica | Clearnet (poc-04) | Limiar Tor (poc-05) | Medido até agora |
 |---|---|---|---|
 | Handshake Noise (frio, circuito novo) | < 1 s | **< 10 s** | (embutido no push abaixo) |
-| Requisição quente (circuito estabelecido) | < 500 ms | **< 2 s** | pendente |
+| Requisição quente (circuito estabelecido) | < 500 ms | **< 2 s** | embutida no push (mesmo circuito quente) [dado-só] |
 | Push do capítulo (768 KiB) | ~3 s | **< 60 s** | Trama **~14-17 s**, libp2p **~12-17 s** ✅ [dado-só] |
 | Lookup frio via Tor (C2) | ≤ 3 RTTs | **< 10 s** | Trama **~3,7 s** ✅ / libp2p **~22 s** ⚠ [dado-só] |
-| Vazamento (pcap) | — | **0 pacotes** fora do Tor (binário) | pendente (sudo, E4) |
+| Vazamento (pcap) | — | **0 pacotes** fora do Tor (binário) | **0 pacotes ao IP de R** ✅ (`sudo tcpdump`, R em VPS separada `143.95.220.165`) [executado] |
 | Retoma pós-morte de circuito | — | recupera sem intervenção | ✅ retry re-disca, 2 tentativas, ~28 s [dado-só] |
-| Mudança no app leitor | 0 linhas | **0 linhas** | pendente (E4) |
+| Mudança no app leitor | 0 linhas | **0 linhas** | **0** ✅ (grep no `src/main`; backend por build variant) [executado] |
 | Vazamento de seam novo | 3 pts (poc-04) | **≤ 1 novo**, documentado | **1** (`ANONYMOUS_DIAL`) ✅ [executado] |
 | Veto de esforço | 5 dias/adapter | **5 dias/adapter** | Trama « 1 dia ✅ |
 
@@ -241,21 +241,25 @@ num único push; o modelo é por capítulo.
   (`8.8.8.8` ❌).
 - `poc05/rig/audit-listen.sh` — 0 sockets de escuta não-loopback em P (o `TramaClient` não
   liga `ServerSocket` algum: garantia estrutural — client é só saída, ADR-0005).
-- `poc05/rig/audit-pcap.sh` — captura binária "0 pacotes fora do Tor". Precisa de `sudo`
-  (a execução final da camada 1 do D5 fica para o rig com privilégio).
+- `poc05/rig/audit-pcap.sh` — captura binária "0 pacotes fora do Tor". Rodado com `sudo` e R
+  numa VPS separada (`143.95.220.165`): a camada 1 do D5 fechou **limpa** (0 pacotes ao IP de
+  R durante o push anônimo — § E4-T).
 
 ## 4. Limites desta rodada / ameaças à validade
 
-- **Rig self-contained numa máquina só:** P, R e o daemon Tor coabitam em `192.168.1.13`.
-  Isso **prova o mecanismo** (SOCKS5h, Noise através do circuito, push, aceitação) mas
-  **não** substitui a matriz E2E multi-máquina do E4 (R/B com IP público em `192.168.1.15`,
-  leitor no Moto g(30) em dados móveis) nem a camada 1 do D5 (pcap binário com `sudo`).
-- **E2 concluído** (rust-libp2p sobre Tor viável, funcional sobre onion real). Falta só a
-  camada 1 do D5 (pcap binário com `sudo`) para fechar o não-vazamento por auditoria — a
-  contenção do swarm libp2p é estrutural (SOCKS-only), mas o pcap é a prova dura.
-- **E3/E4/E5** dependem da infra completa do rig (VPS pública, device físico, captura
-  privilegiada). Serão preenchidos quando o rig estiver montado; nada aqui é declarado sem
-  execução.
+- **Rig self-contained numa máquina só (mitigado, depois RESOLVIDO):** parte das células
+  rodou com P, R e o daemon Tor coabitando em `192.168.1.13` — isso **prova o mecanismo**
+  (SOCKS5h, Noise através do circuito, push, aceitação) e foi mitigado pela captura por
+  processo. As conclusões-chave (velocidade e pcap) foram **refeitas com R+B numa VPS Ubuntu
+  separada** (`143.95.220.165`) e P no desktop, fechando a matriz E2E multi-máquina do E4 e a
+  camada 1 do D5 (§ E4-T, § 6).
+- **E2 concluído** (rust-libp2p sobre Tor viável, funcional sobre onion real). A camada 1 do
+  D5 (pcap binário com `sudo`) foi **executada e fechou limpa**: 0 pacotes ao IP de R durante
+  o push anônimo (§ E4-T). A contenção do swarm libp2p é estrutural (SOCKS-only) E confirmada
+  pelo pcap.
+- **E3/E4/E5** rodaram sobre a infra completa do rig (VPS pública separada, Moto g(30) físico
+  em dados móveis, captura `sudo`). Nada aqui é declarado sem execução; cada claim carrega sua
+  classe de evidência.
 
 ## 5. Veredito (Q10) [síntese sobre E0–E3 executados]
 
@@ -263,11 +267,13 @@ num único push; o modelo é por capítulo.
 Tor real.** O publicador anônimo fecha o ciclo do produto (push → R → fetch verificado) por
 dentro de um circuito Tor onion, nos dois cenários (C1 IP conhecido, C2 descoberta via Tor),
 com **1 único ponto de vazamento novo** no seam (`ANONYMOUS_DIAL`), **zero branch de app**, e o
-mesmo driver neutro rodando os dois backends. Ressalva honesta: o não-vazamento está provado
-**funcionalmente e por construção** (SOCKS5h sem DNS local; onion sem IP de origem discável;
-transporte SOCKS-only ⇒ dial direto impossível no libp2p), mas a **camada dura do D5 — o pcap
-binário "0 pacotes fora do Tor"** — exige o rig privilegiado (`sudo`, E4). Até lá o veredito é
-"viável e abaixo do seam, **não-vazamento auditado pendente**", não "provado à prova de pcap".
+mesmo driver neutro rodando os dois backends. O não-vazamento está provado em três frentes que
+convergem: **por construção** (SOCKS5h sem DNS local; onion sem IP de origem discável;
+transporte SOCKS-only ⇒ dial direto impossível no libp2p), **funcionalmente** (E2E fechado no
+device real), e agora pela **camada dura do D5 — o pcap binário "0 pacotes fora do Tor"** —
+executada com `sudo` e **R numa VPS separada** (`143.95.220.165`): 0 pacotes ao IP de R durante
+o push anônimo, 0 DNS do onion, e sem fallback de dial direto (§ E4-T). O veredito é, portanto,
+"viável e abaixo do seam, **não-vazamento auditado e limpo**" — provado à prova de pcap.
 
 **GATILHO INVERTIDO: confirmado.** O modo anônimo favorece a Trama de forma consistente e
 medida — é argumento **contra** migrar da Trama ao rust-libp2p, o oposto dos gatilhos da Q10 do
