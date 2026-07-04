@@ -16,8 +16,17 @@ rust-libp2p) via
 **bindings nativos** — o buraco que o poc-01 (port JVM capenga) e o poc-02 (venceu esse
 adversário) deixaram. Ambas as variantes foram do binding ao **E2E do Marco 0 pela internet real**
 (device em dados móveis → IP público → descoberta fria → download → verificação → rejeição de
-adulterado) no Moto g(30). O produto é **conhecimento comparável**, não decisão de stack (design
-"Why"/"Goals"). Os limiares abaixo foram fixados ANTES de qualquer medição.
+adulterado) no Moto g(30). Os limiares abaixo foram fixados ANTES de qualquer medição.
+
+**Veredito (interno à família libp2p): `go-libp2p ELIMINADO`, `rust-libp2p ELEITA`.** O poc-03
+entrega o **conhecimento comparável** que o design pediu (goal "Why"/"Goals") — e esse
+conhecimento, medido contra um limiar de *shippability* fixado a priori (**APK ≤ 20 MB/ABI**),
+força um veredito **dentro** da família libp2p: o **go-libp2p estoura o teto** (~29–35 MB/ABI,
+inshippável) e é descartado exatamente como a Amino foi no poc-01 — por **falhar um limiar**, não
+por preferência; o **rust-libp2p cabe** (8–11 MB/ABI), roda no dispositivo e gera Kotlin
+idiomático, então **é a variante de referência que avança para o poc-04**. O que o poc-03 **não**
+decide é Trama × rust-libp2p — essa é a pergunta do poc-04, e é por isso que o poc-04 testa a
+própria contra o **rust** (nunca o go): o funil já se estreitou aqui.
 
 Esta é a via mais custosa das três POCs (as anteriores eram Kotlin puro); o design fixou um
 **veto de esforço de 5 dias úteis por variante** (D5) que transforma estouro de custo em
@@ -356,8 +365,9 @@ Colunas medidas marcadas _pendente_ até o cross-compile/dispositivo. As demais 
 Hipótese a priori (do usuário): "go mais completo, rust melhor KMP". **Confirmada pelos dados até
 aqui:** go traz mais protocolo (boxo/Bitswap) mas o binário é ~5–7× maior e **estoura o teto de
 APK**; rust gera Kotlin idiomático, `.so` enxuto dentro do teto, ao custo de não ter Bitswap
-oficial (irrelevante, pois a OpenToons usa Request-Response). O único desempate ainda aberto no
-E1 é a **execução no dispositivo sem crash** (2.3/3.3).
+oficial (irrelevante, pois a OpenToons usa Request-Response). A execução no dispositivo sem crash
+(2.3/3.3) — o último desempate do E1 — também passou nas duas; com o peso, o veredito interno à
+família fecha: **go eliminado pelo teto de APK, rust eleita**.
 
 ---
 
@@ -402,9 +412,11 @@ colhidos:
 - **Atrito de build:** go falhou no link (`anet`/`checklinkname` → `-ldflags`); rust exigiu
   alinhar features/naming (3 iterações). Ambos registrados para o CI do Marco 2.
 
-A hipótese a priori do usuário ("go mais completo, rust melhor KMP") **se confirma nos dados**.
+A hipótese a priori do usuário ("go mais completo, rust melhor KMP") **se confirma nos dados** — e
+o desempate de peso é **terminal**: o go-libp2p falha o limiar de APK (≤ 20 MB/ABI) e **sai**; o
+rust-libp2p passa e é a variante de referência que o poc-04 leva adiante.
 
-## Conclusão geral (E1–E5 executados; sem veredito de stack — não é o objetivo)
+## Conclusão geral (E1–E5 executados; veredito interno à família libp2p)
 
 O poc-03 **fechou o buraco**: o libp2p **de referência** foi medido de ponta a ponta, nas duas
 variantes, no mesmo dispositivo e critério das POCs anteriores.
@@ -425,6 +437,11 @@ variantes, no mesmo dispositivo e critério das POCs anteriores.
 
 **Nenhum veto de esforço foi aproximado** — as duas variantes foram do zero ao E2E numa sessão.
 O custo do caminho de referência vs a stack própria (poc-02, 0,96 MB, Kotlin puro) é honesto e
-medido: **~3 GB de toolchain nativo + 8–35 MB/ABI de binário**. A decisão de stack do Marco 2
-**não é tomada aqui** — a POC entregou os dados comparáveis que eram seu único objetivo.
+medido: **~3 GB de toolchain nativo + 8–35 MB/ABI de binário**.
+
+**O veredito que o poc-03 TOMA:** dentro da família libp2p, **go-libp2p é eliminado pelo teto de
+APK e rust-libp2p é eleita** a variante de referência — é ela, não o go, que segue para o poc-04.
+**O veredito que o poc-03 DEIXA em aberto (de propósito):** Trama × rust-libp2p — a decisão de
+stack do Marco 2, objeto do poc-04. A POC entregou os dados comparáveis que eram seu objetivo *e*
+o desempate que esses dados tornaram inevitável.
 </content>
