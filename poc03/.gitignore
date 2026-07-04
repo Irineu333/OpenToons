@@ -8,6 +8,7 @@ rust-facade/generated-kotlin/
 
 # Go (gomobile bind)
 go-facade/opentoons-gofacade.aar
+go-facade/opentoons-gofacade-sources.jar
 go-facade/pkg/
 
 # .so copiados para os apps (gerados a partir dos facades)
