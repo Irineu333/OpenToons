@@ -1,0 +1,10 @@
+# poc-05: só-fonte (convenção do poc04). Artefatos e binários são regeneráveis:
+#   rust host dylib:  cd rust-facade && cargo build
+#   android .so:      cargo ndk -t arm64-v8a -o android/src/libp2p/jniLibs build --release
+#   binding UniFFI:   cargo run --bin uniffi-bindgen generate src/facade.udl --language kotlin --out-dir ../libp2p/src/main/kotlin
+rust-facade/target/
+rust-facade/generated-kotlin/
+rust-facade/jniLibs/
+libp2p/nativelib/
+libp2p/src/main/kotlin/uniffi/
+android/src/libp2p/jniLibs/

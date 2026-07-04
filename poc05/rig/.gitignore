@@ -1,0 +1,8 @@
+# estado runtime do rig Tor: chaves do onion (secret_key!), consenso, logs, pcaps
+tor-publisher/data/
+tor-publisher/tordata/
+tor-publisher/onion-r/
+tor-publisher/onion-b/
+tor-publisher/tor.log
+*.pcap
+*.log

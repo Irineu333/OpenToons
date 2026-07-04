@@ -1,0 +1,65 @@
+# Facade Rust DESCARTÁVEL da PoC poc-05: cópia do facade do poc-03 ESTENDIDA com o lado
+# full-node (E2 — listen + Kademlia server + provide + serve-blocks via callback Kotlin),
+# cross-compilada para Android via `cargo-ndk` (.so) e para host macOS arm64 (.dylib).
+# Ver openspec/changes/poc-04 e docs/poc04-report.md. O poc03/rust-facade fica intocado.
+# package name == lib name == uniffi_facade: o UniFFI deriva os símbolos `checksum_*` do
+# package name e os `ffi_`/`fn_` do lib name; se divergirem, o .so exporta prefixos mistos e
+# o binding Kotlin não casa. Mantê-los iguais (e = namespace `uniffi_<facade>`) alinha tudo.
+[package]
+name = "uniffi_facade"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[lib]
+# cdylib: o .so carregado pelo app; staticlib para o host desktop.
+# O nome DEVE bater com o que os bindings do UniFFI procuram (uniffi_<namespace da udl>),
+# senão o dlopen falha com "library libuniffi_facade.so not found". Os símbolos exportados
+# continuam prefixados pelo nome do crate (opentoons_poc03_rustfacade), que é o que o
+# Kotlin gerado chama — só o nome do arquivo .so precisa ser uniffi_facade.
+crate-type = ["cdylib", "staticlib"]
+name = "uniffi_facade"
+
+# gerador de bindings Kotlin do UniFFI (a partir do facade.udl)
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/uniffi-bindgen.rs"
+
+# (o publisher.rs avulso do poc-03 foi REMOVIDO deste fork: o lado servidor agora é o
+# ServerNode do lib.rs, dirigido pela interface Kotlin FullNode — restrição D3 do poc-04)
+
+[dependencies]
+uniffi = { version = "0.28", features = ["tokio", "cli"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros", "time"] }
+futures = "0.3"
+thiserror = "1"
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+# rust-libp2p v0.54: Noise + TCP/QUIC + Kademlia + Request-Response + DCUtR (design "Fatos")
+libp2p = { version = "0.54", features = [
+    "tokio",
+    "tcp",
+    "quic",
+    "noise",
+    "yamux",
+    "kad",
+    "request-response",
+    "dcutr",
+    "relay",
+    "identify",
+    "macros",
+] }
+# codec CBOR do request-response fica atrás da feature `cbor` do crate direto; a unificação
+# de features do cargo habilita `libp2p::request_response::cbor` no mesmo crate do meta.
+libp2p-request-response = { version = "0.27", features = ["cbor"] }
+# poc-05 E2 (D6): o dialer SOCKS "não vem pronto" no libp2p — este é o Transport custom.
+# tokio-socks disca por SOCKS5 com resolução REMOTA (SOCKS5h, alvo por domínio/.onion);
+# tokio-util/compat converte o stream tokio → futures AsyncRead/Write que o libp2p espera.
+tokio-socks = "0.5"
+tokio-util = { version = "0.7", features = ["compat"] }
+# serde_bytes: força os blocos do push a CBOR byte-string (major 2), não array-de-inteiros —
+# senão 768 KiB inflam >1 MiB e estouram o REQUEST_SIZE_MAXIMUM (1 MiB) do request-response.
+serde_bytes = "0.11"
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }

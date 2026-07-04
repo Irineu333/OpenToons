@@ -68,3 +68,12 @@ include(":poc04:trama")
 include(":poc04:libp2p")
 include(":poc04:android")
 include(":poc04:node")
+// poc-05: modo anônimo (publicador sobre Tor), backend trocável. Estende o seam do poc-04
+// com `push` (o publicador não-discável não pode ser puxado) + config de anonimato como
+// fábrica de backend. api/trama/node são JVM; libp2p/rust-facade/android herdam o toolchain
+// nativo do poc-04. Ver openspec/changes/poc-05 e docs/poc05-report.md.
+include(":poc05:api")
+include(":poc05:trama")
+include(":poc05:libp2p")
+include(":poc05:node")
+include(":poc05:android")
