@@ -3,6 +3,12 @@
 > Artefato durável do poc-03. O código em `poc03/` é descartável; o que vale é este relatório.
 > Change: [openspec/changes/archive/2026-07-03-poc-03](../openspec/changes/archive/2026-07-03-poc-03/proposal.md) · Design: [design.md](../openspec/changes/archive/2026-07-03-poc-03/design.md)
 > Linhas de base: [poc01-report.md](poc01-report.md) (nabu/jvm-libp2p) e [poc02-report.md](poc02-report.md) (stack própria).
+>
+> **Follow-up (poc-04):** o facade rust deste relatório foi **estendido com o lado
+> full-node via FFI** (listen + Kademlia server + provide + serve-blocks por callback
+> Kotlin) e posto atrás do mesmo seam neutro que a stack própria — matriz E2E 8/8 e
+> veredito `própria → rust-libp2p condicional a gatilho`. Ver
+> [poc04-report.md](./poc04-report.md).
 
 **Status: CONCLUÍDO** (jul/2026 — E1–E5 executados; ressalva única: bateria não medível no rig
 adb/USB, ver 8.1). O poc-03 é um benchmark comparativo do libp2p **de referência** (go-libp2p e

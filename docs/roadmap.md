@@ -39,6 +39,16 @@ produto. É código descartável cujo produto é *conhecimento*, não features.
 > As duas variantes rodaram do binding ao E2E do Marco 0 no Moto g(30); **peso é o desempate:
 > rust 8–11 MB/ABI cabe no teto, go 33–35 MB/ABI estoura**. Produto é conhecimento comparável,
 > **não** decisão de stack. Resultados e matrizes em [poc03-report.md](./poc03-report.md).
+>
+> **Extensão (poc-04, concluída — jul/2026):** a decisão que o poc-02/03 deixou aberta foi
+> fechada pela terceira via — **não acoplar**: a change
+> [poc-04](../openspec/changes/poc-04/proposal.md) provou um **seam neutro com backend
+> trocável em build-time** (Trama × rust-libp2p), client E full node, com TCK 100% verde nos
+> dois, **matriz E2E 8/8** (mesmo app, dados móveis → IP público, só trocando a build
+> variant), ponte de migração **dual-stack** (dois stacks sobre o mesmo blockstore) e
+> inventário de vazamento = 3 pontos documentados, zero branch. **Veredito: `própria →
+> rust-libp2p condicional a gatilho`**; a interface + TCK são a referência de design do
+> módulo de rede do Marco 2. Ver [poc04-report.md](./poc04-report.md).
 
 **Escopo:**
 
@@ -91,7 +101,11 @@ consumir da malha.
   o E3 do [poc-02](./poc02-report.md) mediu gossip × Kademlia em simulação (10–10.000 nós)
   e recomendou gossip, com **gatilho objetivo de migração para DHT**: quando
   `obras × réplicas` passar de ≈ 5.000 registros ativos (tráfego de re-anúncio ∝ registros,
-  não ∝ nós) ou a malha passar de ~10.000 nós plenos — reavaliar no marco 4;
+  não ∝ nós) ou a malha passar de ~10.000 nós plenos — reavaliar no marco 4; o
+  [poc-04](./poc04-report.md) tornou essa migração um **flag de build**: o módulo de rede
+  deve nascer atrás do seam `P2pBackend`/`FullNode`/`Blockstore` (tipos neutros, verify fora
+  do seam, TCK de conformidade no CI), backend de lançamento Trama, adapter rust-libp2p
+  mantido verde no CI até um gatilho disparar;
 - **replicação entre publicadores** (opt-in, com teto);
 - **módulo de rede no mobile:** o leitor do marco 1 ganha o **DHT client**,
   descoberta de catálogo (consulta a múltiplos nós + merge), roteamento e

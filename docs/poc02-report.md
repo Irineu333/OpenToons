@@ -9,6 +9,11 @@
 > bindings nativos para um benchmark justo. Dado central que ataca a vitória do poc-02 (0,96 MB de
 > APK, Kotlin puro): o binding pesa **~6 MB/ABI (rust) a ~29 MB/ABI (go)** — go estoura o teto de
 > 20 MB/ABI, rust não. Ver [poc03-report.md](./poc03-report.md).
+>
+> **Follow-up (poc-04):** a decisão de stack foi fechada pela terceira via — a stack deste
+> relatório (batizada **Trama**) e o rust-libp2p rodaram atrás de um **seam neutro com
+> backend trocável em build-time** (matriz E2E 8/8, dual-stack, veredito `própria →
+> rust-libp2p condicional a gatilho`). Ver [poc04-report.md](./poc04-report.md).
 
 **Status: CONCLUÍDO** (jul/2026). Todos os experimentos executados — incluindo dispositivo
 físico (Moto g(30), API 31), sessão de 30 min de bateria/dados, e o E2E de descoberta fria
