@@ -60,3 +60,11 @@ include(":poc02:android")
 include(":poc03:net")
 include(":poc03:android")
 include(":poc03:android-go")
+// poc-04: seam P2P com backend trocável (Trama × rust-libp2p). O rust-facade estendido
+// (poc04/rust-facade, cópia do poc-03 + lado servidor) é cross-compilado por cargo-ndk
+// (Android .so) e cargo (host .dylib) fora do Gradle, como no poc-03.
+include(":poc04:api")
+include(":poc04:trama")
+include(":poc04:libp2p")
+include(":poc04:android")
+include(":poc04:node")

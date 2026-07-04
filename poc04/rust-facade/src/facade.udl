@@ -1,0 +1,86 @@
+// Superfície FFI do poc-04 (rust-libp2p via UniFFI) — o facade do poc-03 ESTENDIDO com o
+// lado full-node (E2): listen + Kademlia server + provide + serve-blocks, dirigido pela
+// interface Kotlin `FullNode` (nunca por binário avulso). A verificação Ed25519/hash NÃO
+// está aqui — é Kotlin, fora da fronteira (D7).
+namespace facade {
+  // Deriva o PeerId libp2p da chave pública Ed25519 neutra (hex) do seam — a conversão
+  // identidade-neutra → conceito libp2p fica DENTRO do backend (Q3).
+  [Throws=FacadeError]
+  string peer_id_from_ed25519(string pubkey_hex);
+};
+
+[Error]
+enum FacadeError {
+  "Init",
+  "Dial",
+  "Resolve",
+  "Request",
+  "Timeout",
+};
+
+interface Node {
+  // Modo client puro (ADR-0005): descobre e disca, não serve nem roteia.
+  // Construtor SÍNCRONO: o UniFFI 0.28 não gera factory p/ construtor async no backend
+  // Kotlin (companion vazio) — o init bloqueia no runtime interno; as chamadas de rede
+  // seguem async (essas o Kotlin suporta).
+  [Throws=FacadeError]
+  constructor(string bootstrap_multiaddr);
+
+  string peer_id();
+
+  [Throws=FacadeError, Async]
+  void dial(string multiaddr_with_peer);
+
+  // descoberta fria via Kademlia real; "" = nenhum provider (anúncios expirados)
+  [Throws=FacadeError, Async]
+  string resolve(string obra_id);
+
+  // manifesto assinado da obra, bytes crus (verificação em Kotlin, D7)
+  [Throws=FacadeError, Async]
+  bytes get_manifest(string peer_multiaddr, string obra_id);
+
+  // blocos length-prefixed p/ o Kotlin fatiar (mesmo wire do poc-03)
+  [Throws=FacadeError, Async]
+  bytes get_blocks(string peer_multiaddr, string cids);
+
+  // sem close() explícito: o objeto é AutoCloseable no Kotlin gerado; close()/destroy()
+  // dropam o objeto Rust → o runtime interno é dropado e o ator do swarm encerra.
+};
+
+// A fonte de conteúdo fica no KOTLIN (Blockstore neutro do :api — é o que permite o
+// dual-stack do E5 e a adulteração neutra do TCK): o servidor rust chama DE VOLTA o
+// Kotlin a cada request. Atrito FFI novo do E2, registrado no relatório.
+callback interface BlockstoreCallback {
+  bytes? manifest(string obra_id);
+  bytes? block(string cid);
+};
+
+dictionary ServerConfig {
+  // semente Ed25519 de 32 B (hex) — a MESMA identidade neutra do seam; o backend deriva
+  // o conceito interno dele (PeerId) desta chave
+  string identity_seed_hex;
+  u16 listen_port;      // 0 = efêmera (a efetiva sai em listen_port())
+  string? public_ip;    // anuncia endereço público (port forwarding) como externo
+  u16? public_port;
+  u64 ttl_ms;           // TTL do provider record (expiry interno ao backend)
+  u64 republish_ms;     // intervalo de republicação (republish interno ao backend)
+};
+
+interface ServerNode {
+  // Full node: escuta TCP+QUIC, Kademlia Mode::Server, serve blocos por Request-Response
+  // a partir do BlockstoreCallback. Construtor síncrono (bloqueia até o listen subir).
+  [Throws=FacadeError]
+  constructor(ServerConfig cfg, BlockstoreCallback store);
+
+  string peer_id();
+
+  // porta TCP efetivamente escutada (cfg.listen_port=0 → efêmera)
+  u16 listen_port();
+
+  [Throws=FacadeError, Async]
+  void bootstrap(string multiaddr_with_peer);
+
+  // anuncia-se provider do obraId na DHT (start_providing); o republish é interno
+  [Throws=FacadeError, Async]
+  void start_providing(string obra_id);
+};

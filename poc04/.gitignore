@@ -1,0 +1,12 @@
+# Artefatos de build nativo do poc-04 — DESCARTÁVEIS e regeneráveis (ver rust-facade/README).
+# Não versionar: saem dos comandos de build do facade (cargo/cargo-ndk/uniffi-bindgen).
+
+# Rust (cargo-ndk / cargo)
+rust-facade/target/
+rust-facade/jniLibs/
+rust-facade/generated-kotlin/
+
+# binding Kotlin do UniFFI + .so/.dylib copiados para os módulos consumidores
+libp2p/src/main/kotlin/uniffi/
+libp2p/nativelib/
+android/src/libp2p/jniLibs/
