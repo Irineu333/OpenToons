@@ -49,6 +49,18 @@ produto. É código descartável cujo produto é *conhecimento*, não features.
 > inventário de vazamento = 3 pontos documentados, zero branch. **Veredito: `própria →
 > rust-libp2p condicional a gatilho`**; a interface + TCK são a referência de design do
 > módulo de rede do Marco 2. Ver [poc04-report.md](./poc04-report.md).
+>
+> **Extensão (poc-05, concluída — jul/2026):** o **modo anônimo** (publicador sobre Tor)
+> estendeu o seam do poc-04 com o RPC de **`push`** (o publicador não-discável empurra) e a
+> config de anonimato como fábrica de backend. A change
+> [poc-05](../openspec/changes/poc-05/proposal.md) fechou o E2E sobre **Tor real** nos dois
+> backends — publicador anônimo empurra pelo onion → replicador público → **Moto g(30) em
+> dados móveis baixa e verifica**, com não-vazamento **auditado** (P só fala com o daemon
+> Tor; 0 DNS do onion) e **+1 ponto de vazamento** no seam (`ANONYMOUS_DIAL`). O
+> rust-libp2p sobre Tor coube no veto (Transport SOCKS custom), mas a **descoberta anônima é
+> ~6× mais lenta** (walk de Kademlia = N circuitos × 1 da Trama). **Veredito: viável e abaixo
+> do seam; GATILHO INVERTIDO** — um requisito de anonimato pesa **contra** migrar da Trama ao
+> libp2p. Ver [poc05-report.md](./poc05-report.md).
 
 **Escopo:**
 
@@ -142,7 +154,11 @@ revelar.
   [ADR-0006](./decisions/0006-nat-and-reachability.md));
 - avaliar **fallback HTTP de consumo** — Caminho B do
   [ADR-0005](./decisions/0005-mobile-client.md) — como complemento ao DHT client;
-- avaliar **transporte Tor/I2P opcional** para nós plenos (privacidade de rede);
+- avaliar **transporte Tor/I2P opcional** para nós plenos (privacidade de rede) — o
+  [poc-05](./poc05-report.md) já **de-riscou o Tor**: modo anônimo viável e abaixo do seam,
+  E2E provado sobre Tor real nos dois backends, com o `push` e a config de anonimato como
+  extensões neutras; falta um ADR formalizando o Tor como alcançabilidade **+** privacidade e
+  o anúncio dual-homed (onion + IP público);
 - **allowlist/blocklist por obra** no replicador — controle do operador sobre o que
   replica, apoiado no identificador único de obra;
 - resiliência de bootstrap multi-canal endurecida;

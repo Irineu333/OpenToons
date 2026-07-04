@@ -25,7 +25,9 @@ mobile (atrás de NAT) ◀─ disca ── qualquer um            ❌ entrada bl
 - **Furo automático de NAT** (AutoNAT + DCUtR, com circuit relay v2 como fallback)
   fica **adiado para avaliação no marco 4**, quando a operação real mostrar quantos
   publicadores de fato ficam presos atrás de NAT sem conseguir configurar o
-  roteador.
+  roteador. Nota: o [poc-05](../poc05-report.md) provou uma via alternativa para o
+  publicador não-discável — **Tor + `push`** (o publicador anônimo, só saída, empurra
+  blocos à VPS por dentro do circuito), que também resolve o NAT sem furo automático.
 - **O mobile só faz conexões de saída** direto ao detentor do conteúdo. Seu NAT é
   irrelevante e ele **nunca precisa de relay para ler**.
 - **Nada fica no caminho de leitura do mobile** — ele disca direto o endereço

@@ -41,7 +41,9 @@ e sua VPS), a sincronização pode ser um **push de saída** do desktop para o e
 público conhecido da VPS. Conexão de saída **não sofre NAT**, então o **desktop
 nunca precisa de endereço público nem da DHT para semear** — mantém-se atrás do NAT,
 só com saída (coerente com [ADR-0006](./0006-nat-and-reachability.md) e com o Tor
-opcional previsto para o marco 4). Servir diretamente a leitores durante a janela é
+opcional previsto para o marco 4 — de-riscado pelo
+[poc-05](../poc05-report.md): o publicador anônimo sobre Tor empurra por `push` à VPS,
+E2E provado sobre Tor real). Servir diretamente a leitores durante a janela é
 possível, mas é **bônus**, não requisito: o caminho recomendado é desktop → VPS →
 rede.
 
