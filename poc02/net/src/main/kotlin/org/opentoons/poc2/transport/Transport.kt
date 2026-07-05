@@ -10,7 +10,21 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.thread
+
+/**
+ * Contadores GLOBAIS de bytes reais no fio (refresh do poc-02: substitui a estimativa da
+ * simulação por medição). Conta o payload de cada frame + o prefixo de 4 B, nos dois
+ * sentidos. Numa malha real de N nós no mesmo processo, total/N = tráfego médio por nó —
+ * a mesma métrica que o E3 modelava, agora medida sobre sockets/Noise/gossip reais.
+ */
+object NetStats {
+    val txBytes = AtomicLong()
+    val rxBytes = AtomicLong()
+    fun reset() { txBytes.set(0); rxBytes.set(0) }
+    fun total(): Long = txBytes.get() + rxBytes.get()
+}
 
 /**
  * Transporte TCP da PoC poc-02 (design D1): sockets bloqueantes do JDK, uma thread por
@@ -57,8 +71,10 @@ class SocketFrameConnection(private val socket: Socket) : FrameConnection {
     private val output = socket.getOutputStream()
 
     override val remoteDescription: String get() = socket.remoteSocketAddress.toString()
-    override fun send(payload: ByteArray) = synchronized(output) { Frames.write(output, payload) }
-    override fun receive(): ByteArray? = Frames.read(input)
+    override fun send(payload: ByteArray) = synchronized(output) {
+        Frames.write(output, payload); NetStats.txBytes.addAndGet(payload.size + 4L); Unit
+    }
+    override fun receive(): ByteArray? = Frames.read(input)?.also { NetStats.rxBytes.addAndGet(it.size + 4L) }
     override fun close() = socket.close()
 }
 
