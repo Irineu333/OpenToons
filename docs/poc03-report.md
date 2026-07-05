@@ -10,8 +10,8 @@
 > veredito `própria → rust-libp2p condicional a gatilho`. Ver
 > [poc04-report.md](./poc04-report.md).
 
-**Status: CONCLUÍDO** (jul/2026 — E1–E5 executados; ressalva única: bateria não medível no rig
-adb/USB, ver 8.1). O poc-03 é um benchmark comparativo do libp2p **de referência** (go-libp2p e
+**Status: CONCLUÍDO** (jul/2026). O poc-03 é um benchmark
+comparativo do libp2p **de referência** (go-libp2p e
 rust-libp2p) via
 **bindings nativos** — o buraco que o poc-01 (port JVM capenga) e o poc-02 (venceu esse
 adversário) deixaram. Ambas as variantes foram do binding ao **E2E do Marco 0 pela internet real**
@@ -40,8 +40,7 @@ Definidos ANTES de qualquer medição. Ajustes posteriores exigem justificativa 
 
 | Métrica | Cenário | Limiar |
 |---|---|---|
-| Bateria | Sessão do poc-01/02: 30 min, lookups periódicos, Moto g(30) | **< 5%** |
-| Dados móveis | Mesma sessão, tráfego do UID além do conteúdo | **< 20 MB** |
+| Dados móveis | Sessão de 30 min, tráfego do UID além do conteúdo | **< 20 MB** |
 | Handshake | Primeira conexão, dispositivo físico, rede real | **< 1 s** |
 | Reconexão | Reconexão ao mesmo nó (QUIC 0-RTT se houver) | **< 500 ms** |
 | Lookup frio (Kademlia) | Cliente resolve providers a partir só do bootstrap | **≤ 3 RTTs** |
@@ -54,11 +53,14 @@ só-go). O limiar de APK reconhece que o binding é intrinsecamente mais pesado 
 os **0,96 MB do poc-02 não são atingíveis**; `≤ 20 MB por ABI` é o teto de "shippable" com
 split de ABI, e o delta bruto vs 0,96 MB é o custo honesto do caminho de referência.
 
+**Energia (bateria) não é reportada:** o rig adb/USB não mede bateria (aparelho carregando →
+Δ% = 0, `batterystats` sem drain sob carga). O custo de rede é o tráfego por UID (medido) e as
+latências/throughput reais.
+
 ### Baselines das POCs anteriores (para as tabelas lado a lado)
 
 | | nabu / jvm-libp2p (poc-01) | stack própria (poc-02) |
 |---|---|---|
-| Bateria (30 min) | ≈ 0,03% | ≈ 0,012% |
 | Dados além do conteúdo | ≈ 1,09 MB | ≈ 0,13 MB |
 | APK | 12 MB (debug, sem R8) | **0,96 MB** |
 | Stack | framework pronto (JVM) | Kotlin puro (Noise XX + RPC próprio) |
@@ -286,6 +288,15 @@ O app conhece **só A + o obraId** — nunca o endereço de P.
 - **7.3 — rejeição de adulterado:** contra um provider que serve um bloco com 1 byte corrompido,
   o app **rejeitou** (`BlockHashMismatch`), pela internet. (Assinatura inválida também rejeitada —
   coberto nos testes unitários.)
+- **Reconfirmação em VPS pública real (rede separada).** O facade rust (estendido com lado
+  servidor no poc-04) foi **cross-compilado para `x86_64-linux-gnu`** e rodou como **rede
+  Kademlia PRÓPRIA numa VPS de IP público direto** (`143.95.220.165`, sem NAT hairpin):
+  bootstrap + provider. Descoberta fria via Kademlia real + transferência + verificação:
+  do **desktop** (outra rede) descoberta 468–587 ms e ciclo de 768 KiB ~1,0 s (~1 MB/s); do
+  **device** (Moto g(30), dados móveis) descoberta 1647 ms, ciclo **3010 ms**, 786432 B
+  verificados, com as rejeições (bloco corrompido + chave errada) OK. Equipara o rust-libp2p
+  ao padrão de VPS da poc-05; o veredito de peso (go estoura o teto de APK, rust cabe) é
+  estático e permanece inalterado.
 
 ## E5 — Medições comparativas e dados só-coletados
 
@@ -337,12 +348,10 @@ ciclos**. Dados por UID lado a lado:
 O libp2p de referência gasta **~1 MB/30 min** — na faixa do nabu (DHT real + Request-Response por
 ciclo), ~8× o da stack própria (que era mais enxuta). Bem dentro do teto.
 
-**Bateria — não medível neste setup (ressalva honesta):** o dispositivo fica no **USB (carregando)**
-para o controle adb, então o Δ% é 0 (100% → 100%) e o `batterystats` não estima drain sob carga
-(tempo "on battery" ≈ 0). Uma medição de bateria comparável exigiria um run desplugado (sem adb),
-fora do que este rig automatizado alcança. Dado o custo de dados equivalente ao nabu (que no
-poc-01 mediu ≈ 0,03%/30 min) e o mesmo padrão de tráfego, a expectativa é da mesma ordem — mas
-**não medido**, registrado como pendência de um run desplugado.
+**Energia (bateria) não é reportada:** o rig adb/USB não mede bateria (dispositivo carregando →
+Δ% = 0, `batterystats` sem drain sob carga). Não há número de bateria confiável em nenhuma das
+POCs, e a decisão de stack não depende dele — o custo de rede é o tráfego por UID (medido) e as
+latências/throughput reais.
 
 ---
 
@@ -432,8 +441,8 @@ variantes, no mesmo dispositivo e critério das POCs anteriores.
 - **E4 — E2E do Marco 0:** **fechado pela internet real** — device em dados móveis → IP público →
   descoberta fria → download → verificação → **rejeição de adulterado**. Handshake 206 ms (< 1 s),
   reconexão 121–224 ms (< 500 ms).
-- **E5 — comparação:** APK e latências acima; sessão de 30 min de dados/bateria (8.1) fecha a
-  comparabilidade com poc-01/02.
+- **E5 — comparação:** APK e latências acima; sessão de 30 min de **dados por UID** (8.1) fecha a
+  comparabilidade com poc-01/02 (energia não reportada — ver nota em 8.1).
 
 **Nenhum veto de esforço foi aproximado** — as duas variantes foram do zero ao E2E numa sessão.
 O custo do caminho de referência vs a stack própria (poc-02, 0,96 MB, Kotlin puro) é honesto e

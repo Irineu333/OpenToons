@@ -61,6 +61,16 @@ produto. É código descartável cujo produto é *conhecimento*, não features.
 > ~6× mais lenta** (walk de Kademlia = N circuitos × 1 da Trama). **Veredito: viável e abaixo
 > do seam; GATILHO INVERTIDO** — um requisito de anonimato pesa **contra** migrar da Trama ao
 > libp2p. Ver [poc05-report.md](./poc05-report.md).
+>
+> **Validação consolidada em rede real (jul/2026):** um passe de re-medição equiparou todas as POCs ao
+> padrão de rigor da poc-05 — E2E de **descoberta fria + transferência** re-executado numa
+> **VPS real e separada** (`143.95.220.165`, IP público direto, sem NAT hairpin) para poc-01
+> (DHT nabu própria), poc-02 (stack própria), poc-03/poc-04 (rust-libp2p cross-compilado para
+> Linux). A **simulação de gossip do poc-02 foi substituída por uma malha REAL** (lookup frio
+> confirmado em 2 RTTs, com o custo de membership agora medido). **Dados de bateria foram
+> removidos de todas as POCs** (medição adb/USB não confiável); o custo de rede fica pelo
+> tráfego por UID (medido) e pelo throughput real (~1 MB/s node↔node pela internet). iOS ficou
+> fora de escopo, com a viabilidade do caminho libp2p (static libs iOS) registrada.
 
 **Escopo:**
 

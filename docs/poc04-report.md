@@ -16,6 +16,38 @@ seção final.
 
 ---
 
+## Validação em VPS real (matriz E2E re-executada, internet)
+
+> A matriz E2E foi **executada numa VPS real e separada** (`143.95.220.165`, IP público
+> direto — sem NAT hairpin, sem co-localização), no mesmo padrão de rigor da poc-05. Nós
+> plenos dos **dois backends** subiram na VPS (Trama JVM direto; rust-libp2p
+> **cross-compilado para `x86_64-linux-gnu`** e carregado por JNA):
+>
+> - **Matriz 8/8 verde re-medida** (2 backends × {ok, bloco corrompido, chave errada}), com o
+>   **Moto g(30) em dados móveis** (hotspot, rede da operadora) baixando da VPS pela clearnet e
+>   o **desktop** por outra rede. Todos com **descoberta fria** (o cliente conhece só o
+>   bootstrap) + transferência + verificação Ed25519.
+>
+>   | Backend | desktop→VPS (descoberta / ciclo 768 KiB) | device→VPS (dial / resolve / ciclo) |
+>   |---|---|---|
+>   | Trama  | 347–378 ms / 0,97–1,06 s | 636 / 1278 / **4579 ms** (786432 B) |
+>   | rust-libp2p | 468–587 ms / 0,94–1,02 s | 51 / 1647 / **3010 ms** (786432 B) |
+>
+> - **Dual-stack (Q9)** re-provado na VPS: 1 processo, 1 blockstore, 2 `FullNode` com a MESMA
+>   identidade Ed25519 — cliente Trama (475 ms) e cliente libp2p (410 ms) baixaram os **mesmos
+>   786432 bytes** pela internet.
+> - **Throughput real** node↔node pela internet: ~1 MB/s (768 KiB/ciclo) nos dois backends do
+>   desktop; no device (dados móveis) o download efetivo ficou ~0,3 MB/s (Trama) / ~0,6 MB/s
+>   (libp2p) descontando dial+resolve.
+> - **Energia (bateria):** não reportada nesta PoC (nem nas de origem) — a medição adb/USB não
+>   é confiável; o custo de rede é o tráfego por UID e as latências/throughput reais.
+> - **iOS: FORA DE ESCOPO** (decisão do usuário). Registro de viabilidade colhido:
+>   os **static libs do rust para iOS** (`aarch64-apple-ios` + `-sim`) **cross-compilaram OK** →
+>   o backend **libp2p é o caminho nativo tratável no iOS** (static lib + Swift via UniFFI),
+>   enquanto o Trama exigiria um port Kotlin/Native de cripto+socket (hoje preso a
+>   BouncyCastle/`java.net`). Fica como dado de design: **iOS seria, ao contrário do Tor da
+>   poc-05, um argumento a FAVOR do libp2p** — candidato a gatilho de migração.
+
 ## Questões Q1–Q12 (fixadas a priori) — respondidas
 
 | # | Questão | Resposta | Evidência |
@@ -258,6 +290,7 @@ Q10 disparar ou o Marco 4 rediscutir.
 - `dial` assimétrico entre backends na tabela de latência (nota acima).
 - Expiry do libp2p no S1 observado no limite do TTL (janela entre republishes); o TCK cobre
   o caso com asserção estrita.
-- Bateria/dados de sessão longa não re-medidos (non-goal; baselines do poc-02/03 valem — o
-  wire de ambos os backends é o mesmo das POCs de origem).
+- Dados de sessão longa não re-medidos aqui (non-goal; o wire de ambos os backends é o mesmo
+  das POCs de origem). **Energia (bateria) não é reportada em nenhuma PoC** — a medição adb/USB
+  não é confiável; a decisão de stack não depende dela.
 - "1 sessão" de esforço é implementação assistida (mesma ressalva do poc-02).

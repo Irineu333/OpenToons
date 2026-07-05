@@ -3,7 +3,7 @@
 > Artefato durável do Marco 0. O código em `poc01/` é descartável; o que vale é este relatório.
 > Change: [openspec/changes/archive/2026-07-03-poc-01](../openspec/changes/archive/2026-07-03-poc-01/proposal.md) · Design: [design.md](../openspec/changes/archive/2026-07-03-poc-01/design.md)
 
-**Status: CONCLUÍDO** (jul/2026). Todos os experimentos executados, incluindo dispositivo físico, medições de bateria/dados, o E2E pelo endereço público a partir de outra rede (critério do Marco 0) e o **E5: rede bootstrap/DHT própria com descoberta fria — validada**. A descoberta na Amino em escala permanece bloqueada por bugs upstream do nabu/jvm-libp2p (todos diagnosticados, com workarounds; ver E2/4.1 e E5). **Recomendação: prosseguir para o Marco 1/2 com a stack nabu sobre rede própria da OpenToons.**
+**Status: CONCLUÍDO** (jul/2026). Todos os experimentos executados, incluindo dispositivo físico, medição de dados por UID, o E2E pelo endereço público a partir de outra rede (critério do Marco 0) e o **E5: rede bootstrap/DHT própria com descoberta fria — validada** (e reconfirmada numa VPS pública real e separada; ver E5). A descoberta na Amino em escala permanece bloqueada por bugs upstream do nabu/jvm-libp2p (todos diagnosticados, com workarounds; ver E2/4.1 e E5). **Recomendação: prosseguir para o Marco 1/2 com a stack nabu sobre rede própria da OpenToons.**
 
 > **Follow-up (poc-02):** a recomendação de rede própria motivou a hipótese inversa — uma
 > camada de rede **implementada do zero, sem framework P2P**, comparada lado a lado com esta
@@ -22,10 +22,12 @@ Definidos ANTES de qualquer medição. Ajustes posteriores exigem justificativa 
 
 | Métrica | Cenário | Limiar |
 |---|---|---|
-| Bateria | Sessão simulada de leitura, 30 min, lookups DHT periódicos | **< 5%** de consumo |
-| Dados móveis | Mesma sessão, tráfego do UID do app **além do conteúdo baixado** | **< 20 MB** |
+| Dados móveis | Sessão de 30 min, tráfego do UID do app **além do conteúdo baixado** | **< 20 MB** |
 
-Ferramentas: `dumpsys batterystats` / Battery Historian; contadores de tráfego por UID (`dumpsys netstats` ou TrafficStats).
+Ferramentas: contadores de tráfego por UID (`dumpsys netstats` ou TrafficStats). **Energia
+(bateria) não é reportada:** a medição só é possível com o aparelho desplugado, e o rig usa
+USB para o controle adb — o `batterystats` não estima drain sob carga. O custo do DHT client
+é o tráfego por UID (medido, abaixo).
 
 ## Questões abertas a responder (do design)
 
@@ -69,23 +71,22 @@ Ferramentas: `dumpsys batterystats` / Battery Historian; contadores de tráfego 
 
 ### E2 — DHT client no Android (completo)
 
-**Veredito: POSITIVO.** Resolução de provider record em modo client puro comprovada (rede direta, pública e fria via E5); custo de bateria/dados desprezível. Único ponto não fechado: resolução na **Amino em escala**, bloqueada por bugs upstream diagnosticados (abaixo e em E5).
+**Veredito: POSITIVO.** Resolução de provider record em modo client puro comprovada (rede direta, pública e fria via E5); custo de dados desprezível. Único ponto não fechado: resolução na **Amino em escala**, bloqueada por bugs upstream diagnosticados (abaixo e em E5).
 
 - Resolução de provider record sem servir (tarefa 4.1): **OK via DHT ao nó E1 (privado e público); resolução na Amino em escala NÃO funciona com nabu v0.8.0.** A mecânica (lookup DHT em modo client → provider record → bitswap, sem servir nem aceitar entrada) foi comprovada duas vezes — em rede privada e pelo endereço público de outra rede. Contra a Amino, porém, nem o record do E1 propaga nem um CID de controle com 26 providers públicos (site ipfs.tech, confirmado via delegated routing) é resolvido pelo app. Diagnóstico (investigado a fundo, com QUIC habilitado via commit `0b421b9427` do nabu — posterior à v0.9.1-quic e com build OK no JitPack): o gap tem **três causas empilhadas** no ecossistema nabu/jvm-libp2p:
   1. **Dial de multiaddr `/dns/` não é suportado** pelo jvm-libp2p (`NothingToCompleteException`) — o bootstrap padrão via dnsaddr falha silenciosamente e a routing table começa com ~1 peer. Contornável resolvendo hostnames para `/ip4/` antes do dial (feito na PoC).
   2. **O transporte QUIC do jvm-libp2p (0.19.16-quic) é instável**: dials QUIC sequenciais funcionam (bootstrap 9/9 conectado, incluindo `/quic-v1` — verificado), mas os dials **paralelos** do walk da DHT quebram com `QuicTransport$dial$connFuture$1 is not a @Sharable handler` + `QuicClosedChannelException`. Como o `findProviders` do nabu executa as consultas em paralelo, o walk morre na primeira rodada. Exige patch upstream (marcar o handler `@Sharable` ou serializar dials).
   3. **Bug de convergência no `findProviders` do nabu**: o ID do alvo é criado **sem** sha256 (`Id.create(key)`) enquanto os peers usam `sha256(peerId)` — a ordenação XOR do walk fica incorreta.
   Com o nabu v0.8.0 (TCP-only) soma-se ainda o fato de a maioria dos servidores da Amino ser QUIC-only. Nota: o build do master do nabu também falha no JitPack (mesmo erro das tags 0.9.x); o commit `0b421b9427` é o mais novo utilizável sem build local.
-- Medições da sessão de 30 min (tarefa 4.2): **OK.** Moto g(30) (bateria 5007 mAh), tela ligada, `dumpsys battery unplug` + `batterystats --reset` antes; 55 lookups de CIDs aleatórios (1 a cada ~33s) em modo client puro conectado a 4 nós da Amino; tráfego por UID via `TrafficStats`.
+- Medição da sessão de 30 min (tarefa 4.2): **OK.** Moto g(30), tela ligada; 55 lookups de CIDs aleatórios (1 a cada ~33s) em modo client puro conectado a 4 nós da Amino; **tráfego por UID via `TrafficStats`**.
 
 **Medições (tarefa 4.3):**
 
 | Métrica | Medido | Limiar | Passa? |
 |---|---|---|---|
-| Bateria (30 min) | nível 28%→28% (Δ=0 p.p.); `batterystats`: 63,5 mAh no UID, sendo 61,9 de **tela** e ~1,55 do stack (cpu+wifi) ≈ 0,03% da bateria; total com tela ≈ 1,27% | < 5% | **SIM** |
 | Dados além do conteúdo | **1,09 MB** (rx 0,95 + tx 0,13) em 55 lookups | < 20 MB | **SIM** |
 
-Leitura: o custo do DHT client é desprezível frente aos limiares — uma ordem de grandeza abaixo em dados e duas em bateria. Medição de PoC (não de laboratório), com USB conectado e "unplug" lógico; o dominante de consumo é a tela, não a rede.
+Leitura: o custo de dados do DHT client é desprezível frente ao limiar — uma ordem de grandeza abaixo.
 
 ### E3 — Manifesto assinado (Ed25519 + `seq`)
 
@@ -113,6 +114,15 @@ Topologia: 4 nós plenos na mesma máquina (bootstrap `:4001`, publicador `:4002
 
 Resultado (tarefa 8.3): o app, conhecendo **somente** o multiaddr do bootstrap e o CID do manifesto, resolveu o provider record na DHT própria, aprendeu o publicador (peerId + endereço público, nunca informados), discou-o, baixou manifesto + blocos via bitswap, verificou a assinatura e rejeitou conteúdo adulterado. `E5 OK`.
 
+**Reconfirmação em VPS pública real (rede separada).** A rede DHT própria foi resubida numa
+VPS Ubuntu de IP público direto (`143.95.220.165`, sem NAT hairpin, sem co-localização): 2 nós
+nabu `private`-mesh com identidades determinísticas e announce do IP público. Do desktop, por
+outra rede, o `LookupClient` fez descoberta fria — `findProviders(testCid)` retornou **4
+providers em 84 ms** com endereços públicos — e o `FetchClient` discou o provider **descoberto**
+e baixou o bloco por bitswap (íntegro). Confirma o E5 pela internet real. Atrito de ambiente
+registrado: o hostname da VPS não resolvia localmente (`MDnsDiscovery.getLocalHost` quebrava o
+`EmbeddedIpfs.start`) — resolvido com entrada em `/etc/hosts`.
+
 **Bugs do nabu v0.8.0 descobertos no caminho (todos com workaround na PoC e candidatos a fix upstream):**
 
 1. **Race no `Kademlia.provideBlock`** — o `ADD_PROVIDER` é enviado via `thenCompose` na conclusão do future do controller, antes de a negociação do stream assentar, e é **descartado em silêncio** (as exceções do método são engolidas e ele reporta sucesso). Com `join()` separando negociação e envio (ou +100ms), funciona 100%. Comprovado por teste JUnit in-process (`DhtColdDiscoveryTest`). **Este bug explica também por que os provider records nunca chegaram à Amino nos testes do E1/4.1.** Workaround: `provideBlockWorkaround` em `poc01/node`.
@@ -124,7 +134,7 @@ Resultado (tarefa 8.3): o app, conhecendo **somente** o multiaddr do bootstrap e
 **Recomendação: adotar a stack nabu/jvm-libp2p.** Todas as premissas do Marco 0 foram validadas em condições reais — dispositivo físico, endereço público, redes distintas — e nenhum plano B (gomobile/UniFFI) se mostrou necessário:
 
 - Compila, dexa e executa no Android (API 31 físico e API 37 emulador), minSdk 26, APK debug 12 MB.
-- DHT client puro viável (binding customizado de ~15 linhas); custo de bateria/dados desprezível (1,09 MB e ~0,03% de bateria em 30 min — limiares de 20 MB e 5%).
+- DHT client puro viável (binding customizado de ~15 linhas); custo de dados desprezível (1,09 MB em 30 min — limiar de 20 MB). (Bateria retirada do relatório: medição não confiável.)
 - Nó pleno discável por endereço público manual (ADR-0006) funciona; E2E completo (descoberta DHT → bitswap → Ed25519) fechou pelo caminho público real.
 
 **Ações obrigatórias para o Marco 2** (nenhuma invalida a stack):

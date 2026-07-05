@@ -8,6 +8,13 @@
 > **[executado]** (rodou nesta máquina, com saída observada), **[dado-só]** (número medido,
 > não re-derivado), **[só-design]** (raciocínio de arquitetura, sem execução).
 
+> **Padrão de rigor (referência das demais POCs):** a poc-05 é a referência de método — VPS
+> real e separada (`143.95.220.165`), device em dados móveis, pcap adversarial, sem métrica de
+> bateria. As **demais POCs foram equiparadas a este padrão**: poc-01 (rede DHT nabu própria),
+> poc-02 (stack própria + malha de gossip REAL no lugar da simulação), poc-03/poc-04
+> (rust-libp2p cross-compilado rodando na mesma VPS), todas com E2E de descoberta fria +
+> transferência pela internet real e sem número de bateria (medição adb/USB não confiável).
+
 ## 0. Definição de "anônimo" (D0 — fixada ANTES de medir) [só-design]
 
 - **O que o modo PROTEGE:** o vínculo entre a _identidade Ed25519 do publicador_ (pública

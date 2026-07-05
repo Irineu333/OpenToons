@@ -16,7 +16,7 @@
 > rust-libp2p condicional a gatilho`). Ver [poc04-report.md](./poc04-report.md).
 
 **Status: CONCLUÍDO** (jul/2026). Todos os experimentos executados — incluindo dispositivo
-físico (Moto g(30), API 31), sessão de 30 min de bateria/dados, e o E2E de descoberta fria
+físico (Moto g(30), API 31), sessão de 30 min de dados por UID, e o E2E de descoberta fria
 por **outra rede** (hotspot/dados móveis → endereço público, critério do Marco 0). Nenhum
 veto de esforço foi aproximado. **Recomendação: implementação própria (Noise XX + RPC de
 frames + membership/gossip) como stack de rede do Marco 2** — ver a seção final. Os limiares
@@ -28,16 +28,18 @@ Definidos ANTES de qualquer medição. Ajustes posteriores exigem justificativa 
 
 | Métrica | Cenário | Limiar |
 |---|---|---|
-| Bateria | Mesma sessão do poc-01: 30 min, lookups periódicos, Moto g(30) | **< 5%** |
-| Dados móveis | Mesma sessão, tráfego do UID além do conteúdo | **< 20 MB** |
+| Dados móveis | Sessão de 30 min, tráfego do UID além do conteúdo | **< 20 MB** |
 | Handshake | Primeira conexão, dispositivo físico, rede real | **< 1 s** |
 | Reconexão | Reconexão subsequente ao mesmo nó | **< 500 ms** |
 | Lookup frio (gossip) | Cliente resolve providers a partir só do bootstrap | **≤ 3 RTTs** |
 | Delta de APK | Camada de rede própria completa (vs 12 MB do nabu) | **≤ 2 MB** |
 | Veto de esforço | Cada variante do E1 (TLS; Noise) | **≤ 5 dias úteis** cada |
 
-Referências do nabu (poc-01, medidas e publicadas): bateria ≈ 0,03% / dados 1,09 MB na sessão
-de 30 min; APK debug 12 MB sem minify.
+Referências do nabu (poc-01): dados 1,09 MB na sessão de 30 min; APK debug 12 MB sem minify.
+
+**Energia (bateria) não é reportada** em nenhuma métrica desta PoC: a medição exigiria o
+aparelho desplugado (o rig usa USB para o controle adb) e o dominante de consumo é a tela, não
+a rede. O custo de rede é o tráfego por UID (medido) e o throughput/latência reais.
 
 ## Questões abertas a responder (do design)
 
@@ -171,10 +173,36 @@ limiar de 500 ms) e em "cripto mantida pela plataforma", que fica registrado com
 assumido da escolha. **Canal do Marco 2: Noise XX** (o E4 já roda sobre ele); TLS 1.3 fica
 documentado como plano B validado.
 
-### E3 — Descoberta: membership+gossip × Kademlia enxuto (simulação)
+### E3 — Descoberta: membership+gossip × Kademlia enxuto
 
-**Veredito: POSITIVO — as duas variantes resolvem descoberta fria em todas as escalas;
+**Veredito: POSITIVO — o gossip resolve descoberta fria em 2 RTTs, medido em malha REAL;
 recomendação: GOSSIP para o Marco 2, com gatilho de migração documentado abaixo.**
+
+#### Malha REAL (resultado primário)
+
+A comparação de custo entre gossip e Kademlia rodou numa **malha real** de N nós plenos
+`FullNode` — sockets TCP, handshake Noise e protocolo de gossip (HELLO/PEX/ANNOUNCE/RESOLVE)
+100% reais entre si (`poc02/net/.../MeshBenchMain.kt`, com contadores de bytes no fio no
+`Transport`). O lookup frio é um cliente efêmero (ADR-0005) que disca só o bootstrap.
+
+| N (real) | lookup frio (RTTs) | lookup (ms) | anúncio→resolvível (ms) | tráfego/nó/rodada (KB, medido) |
+|---|---|---|---|---|
+| 4 | 2 | 2 | 24 | 11,6 |
+| 8 | 2 | 1 | 73 | 24,6 |
+| 16 | 2 | 1 | 206 | 77,4 |
+| 32 | 2 | 1 | 908 | 87,0 |
+
+Achados medidos: **o lookup frio fica em 2 RTTs em toda a escala testada**; a **propagação de
+anúncio** cresce com N (epidemia: 24→908 ms) e o **tráfego/nó cresce com N** (custo da malha de
+membership O(n) por nó). Custo que a simulação idealizada NÃO via: o dial-storm O(n²) do gossip
+full-view **esgota portas efêmeras** (TIME_WAIT) por volta de N≈32 num único host — evidência
+concreta a favor do gatilho de migração para DHT em escala. A escala real é limitada (≪ 10k);
+os números de 1k–10k abaixo vêm da simulação e servem só como extrapolação analítica.
+
+#### Simulação (extrapolação de escala extrema, 1k–10k)
+
+Antes da malha real, a comparação foi feita por simulação idealizada; fica aqui como a fonte
+dos números de escala extrema que a malha real não alcança.
 
 Implementado em `poc02/net/sim/` atrás da interface comum `resolve(obraId) → [providers]`
 (`discovery/Discovery.kt`): E3a gossip (membership completo + anti-entropia com digests
@@ -209,8 +237,8 @@ Em ambas as variantes e todas as escalas o cliente terminou com **0 requisiçõe
 
 - **Lookup:** gossip fica em 2 RTTs frio / 1 RTT quente constantes (limiar D5 de ≤ 3 RTTs
   folgado). Kademlia cresce com log n (2,9 RTTs em 10k) e **todo** lookup do cliente é frio —
-  a tabela nasce vazia a cada abertura do app (ADR-0005), exatamente o custo de bateria que o
-  design D3 antecipou.
+  a tabela nasce vazia a cada abertura do app (ADR-0005), exatamente o custo de energia/latência
+  que o design D3 antecipou.
 - **Tráfego — o achado central:** o custo do gossip NÃO é dominado pelo membership (o full
   view de 10k nós custa 473 KB de memória e some do tráfego em regime); é dominado pela
   **epidemia de re-anúncios de providers**: cada refresh de expiry propaga para os n nós
@@ -308,26 +336,29 @@ saída, sem HELLO, sem estado persistente (ADR-0005).
   as rejeições OK — exatamente o critério de conclusão do Marco 0, fechado pela stack
   própria pelo caminho público real. (Antes disso o mesmo cenário havia passado via NAT
   hairpin da LAN, com alcançabilidade externa provada por 6 nós em 6 países.)
+- **Reconfirmação em VPS pública real (rede separada).** A stack `poc02/net` foi resubida numa
+  VPS Ubuntu de IP público direto (`143.95.220.165`, sem NAT hairpin, sem co-localização):
+  `boot` + `pub` no ar; o cliente do desktop, por outra rede, fez **descoberta fria em 2 RTTs
+  (~400 ms)** → download + verificação + rejeição, em 3 repetições (ciclo 553–693 ms,
+  ~1,2 MB/s). O device (Moto g(30), dados móveis) valida o MESMO wire Noise+RPC+gossip pelo
+  E2E do **poc-04 Trama** (refatoração fiel desta stack) contra a mesma VPS.
 
 ### E5 — Medições comparativas (sessão de 30 min, APK, LoC)
 
 **Veredito: POSITIVO — todos os limiares passam com folga de 1–2 ordens de grandeza.**
 
 **Sessão de 30 min (8.1) — Moto g(30), API 31, mesmo roteiro do poc-01** (tela ligada,
-`battery unplug` lógico + `batterystats --reset`, lookups frios a cada 33 s via endereço
-público, tráfego por UID):
+lookups frios a cada 33 s via endereço público, tráfego por UID):
 
 | Métrica | poc-02 (própria) | poc-01 (nabu) | Limiar | Passa? |
 |---|---|---|---|---|
 | Lookups na sessão | 54 (0 falhas, todos 2 RTTs) | 55 | — | — |
-| Bateria da stack (batterystats, 31 min) | **≈ 0,59 mAh** (cpu 0,011 + wifi 0,58) ≈ **0,012%** da bateria de 5.007 mAh; UID total 61,9 mAh dos quais 61,3 são TELA | ≈ 1,55 mAh ≈ 0,03% | < 5% | **SIM** |
 | Dados além do conteúdo | **0,13 MB** (rx 0,07 + tx 0,06) | 1,09 MB | < 20 MB | **SIM** |
 
-Leitura: a stack própria custou **~8× menos dados** e **~2,6× menos bateria** que o nabu na
-mesma sessão — 54 lookups de descoberta fria custam 130 KB porque cada um é
-PEX + RESOLVE (2 RTTs, ~2,4 KB), sem walk de DHT nem manutenção de routing table. Como no
-poc-01, o consumo dominante do UID é a tela, não a rede; medição de PoC com USB conectado e
-unplug lógico.
+Leitura: a stack própria custou **~8× menos dados** que o nabu na mesma sessão — 54 lookups de
+descoberta fria custam 130 KB porque cada um é PEX + RESOLVE (2 RTTs, ~2,4 KB), sem walk de
+DHT nem manutenção de routing table. (A comparação de bateria foi retirada: a medição original
+era com USB conectado e unplug lógico, dominada pela tela — não sustenta número absoluto.)
 
 | Métrica | poc-02 (própria) | poc-01 (nabu) | Limiar |
 |---|---|---|---|
@@ -389,7 +420,6 @@ todas as métricas medidas:
 | Dimensão | Própria (poc-02) | nabu (poc-01) |
 |---|---|---|
 | Critério E2E do Marco 0 | fecha (descoberta fria pública, verificação, rejeição) | fecha (com 3 workarounds de bugs upstream) |
-| Bateria (sessão 30 min) | ≈ 0,012% | ≈ 0,03% |
 | Dados (sessão 30 min) | 0,13 MB | 1,09 MB |
 | Handshake / reconexão (dispositivo) | 190–320 ms / 141–157 ms (Noise) | não medido isoladamente |
 | APK debug | 4,3 MB (release+R8: 0,96 MB) | 12 MB |
