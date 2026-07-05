@@ -1,0 +1,10 @@
+# datadir do i2pd (gerado em runtime: netDb, addressbook, chaves de destination, logs)
+data-dev/
+warm-iso/
+warmup-data/
+warmup-*/
+# chaves privadas de destination I2P e artefatos runtime
+*.dat
+*.log
+*.pcap
+*.pid

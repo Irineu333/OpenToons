@@ -668,6 +668,10 @@ async fn anon_client_loop(mut swarm: libp2p::Swarm<AnonBehaviour>, mut rx: mpsc:
     // dial adiado: a resposta só volta quando a conexão SOBE (o connect por Tor é lento; o
     // resolve/push posterior precisa da conexão viva a B, não só do dial enfileirado).
     let mut pending_dial: HashMap<PeerId, oneshot::Sender<Result<(), FacadeError>>> = HashMap::new();
+    // poc-06 E-fase: o AnonBehaviour JÁ tem o request-response de blocos; para libp2p-sobre-I2P
+    // o MESMO cliente também LÊ (a trava "leitor é clearnet" era política do poc-05, não limite).
+    let mut pending_blocks: HashMap<request_response::OutboundRequestId, oneshot::Sender<Result<Vec<u8>, FacadeError>>> = HashMap::new();
+    let mut pending_manifest: HashMap<request_response::OutboundRequestId, oneshot::Sender<Result<Vec<u8>, FacadeError>>> = HashMap::new();
 
     loop {
         tokio::select! {
@@ -715,11 +719,28 @@ async fn anon_client_loop(mut swarm: libp2p::Swarm<AnonBehaviour>, mut rx: mpsc:
                         None => { let _ = reply.send(Err(FacadeError::Request("sem /p2p/<id>".into()))); }
                     }
                 }
-                Some(Cmd::GetManifest { reply, .. }) => {
-                    let _ = reply.send(Err(FacadeError::Request("publicador anônimo não lê (leitor é clearnet)".into())));
+                // poc-06 E-fase: leitura sobre I2P (espelha o client_loop clearnet)
+                Some(Cmd::GetManifest { addr, obra_id, reply }) => {
+                    match extract_peer(&addr) {
+                        Some(peer) => {
+                            if has_transport(&addr) { swarm.behaviour_mut().kad.add_address(&peer, addr); }
+                            let rid = swarm.behaviour_mut().blocks.send_request(
+                                &peer, BlocksRequest { manifest_for: Some(obra_id), cids: vec![] });
+                            pending_manifest.insert(rid, reply);
+                        }
+                        None => { let _ = reply.send(Err(FacadeError::Request("sem /p2p/<id>".into()))); }
+                    }
                 }
-                Some(Cmd::GetBlocks { reply, .. }) => {
-                    let _ = reply.send(Err(FacadeError::Request("publicador anônimo não lê (leitor é clearnet)".into())));
+                Some(Cmd::GetBlocks { addr, cids, reply }) => {
+                    match extract_peer(&addr) {
+                        Some(peer) => {
+                            if has_transport(&addr) { swarm.behaviour_mut().kad.add_address(&peer, addr); }
+                            let rid = swarm.behaviour_mut().blocks.send_request(
+                                &peer, BlocksRequest { manifest_for: None, cids });
+                            pending_blocks.insert(rid, reply);
+                        }
+                        None => { let _ = reply.send(Err(FacadeError::Request("sem /p2p/<id>".into()))); }
+                    }
                 }
             },
             event = swarm.select_next_some() => match event {
@@ -784,6 +805,30 @@ async fn anon_client_loop(mut swarm: libp2p::Swarm<AnonBehaviour>, mut rx: mpsc:
                     request_response::Event::OutboundFailure { request_id, error, .. },
                 )) => {
                     if let Some(reply) = pending_push.remove(&request_id) {
+                        let _ = reply.send(Err(FacadeError::Request(error.to_string())));
+                    }
+                }
+                // poc-06 E-fase: resposta/falha do request-response de BLOCOS (leitura sobre I2P)
+                SwarmEvent::Behaviour(AnonBehaviourEvent::Blocks(
+                    request_response::Event::Message { message, .. },
+                )) => {
+                    if let request_response::Message::Response { request_id, response } = message {
+                        if let Some(reply) = pending_blocks.remove(&request_id) {
+                            let _ = reply.send(Ok(encode_length_prefixed(&response.blocks)));
+                        } else if let Some(reply) = pending_manifest.remove(&request_id) {
+                            let _ = reply.send(match response.manifest {
+                                Some(m) => Ok(m),
+                                None => Err(FacadeError::Request("manifesto desconhecido".into())),
+                            });
+                        }
+                    }
+                }
+                SwarmEvent::Behaviour(AnonBehaviourEvent::Blocks(
+                    request_response::Event::OutboundFailure { request_id, error, .. },
+                )) => {
+                    if let Some(reply) = pending_blocks.remove(&request_id)
+                        .or_else(|| pending_manifest.remove(&request_id))
+                    {
                         let _ = reply.send(Err(FacadeError::Request(error.to_string())));
                     }
                 }

@@ -77,3 +77,11 @@ include(":poc05:trama")
 include(":poc05:libp2p")
 include(":poc05:node")
 include(":poc05:android")
+// poc-06: rede nativamente anônima sobre I2P. Reusa o seam do poc-05 e troca APENAS o
+// transporte: TRAMA sobre SAM v3 (STREAM CONNECT/ACCEPT por destination) atrás do mesmo
+// `FrameTransport`. api/trama/node são JVM; o mesmo adapter cross-compila para Android
+// (fala SAM ao router local). Ver openspec/changes/poc-06 e docs/poc06-report.md.
+include(":poc06:api")
+include(":poc06:trama")
+include(":poc06:node")
+include(":poc06:android")
