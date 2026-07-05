@@ -42,8 +42,8 @@ A documentação técnica vive em [`docs/`](./docs):
 - [**Roadmap**](./docs/roadmap.md) — os marcos, do PoC ao sistema de doações.
 - [**Decisões (ADRs)**](./docs/decisions/README.md) — decisões de projeto e **alternativas descartadas**.
 
-> ℹ️ Há um tema ainda **em aberto**: autenticidade de identidade
-> ([ADR-0008](./docs/decisions/0008-identity-trust.md)).
+> ℹ️ A autenticidade de identidade (chave → publicador) foi decidida em camadas
+> verificáveis ([ADR-0008](./docs/decisions/0008-identity-trust.md)).
 
 ## Stack
 

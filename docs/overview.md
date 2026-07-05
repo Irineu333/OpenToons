@@ -48,6 +48,10 @@ O que a rede precisa resistir — e o que explicitamente **não** promete.
 - **Desaparecimento de nós individuais** — o conteúdo permanece disponível enquanto houver nós que escolham replicá-lo.
 - **Omissão de catálogo por um nó** — o cliente consulta múltiplos nós e mescla resultados.
 - **Bloqueio do bootstrap** — a lista de entrada é distribuída por múltiplos canais (ver [ADR-0007](./decisions/0007-resilient-bootstrap.md)).
+- **Impostor de publicador já seguido ou verificável** — pinning da chave no
+  "seguir", follow direto pela chave (URI/QR de canais próprios), endosso público
+  assinado de 1 salto e verificação opcional por domínio
+  (ver [ADR-0008](./decisions/0008-identity-trust.md)).
 
 **Não promete (limites honestos):**
 
@@ -60,8 +64,11 @@ O que a rede precisa resistir — e o que explicitamente **não** promete.
 - **Proteção contra obrigações legais** — a rede não protege publicadores nem
   operadores de nós das consequências do que publicam ou replicam. Quem publica
   deve deter os direitos sobre o que distribui.
-- **Autenticidade de identidade sem ponto de partida de confiança** — vincular uma
-  chave a um publicador "de verdade" ainda é um problema em aberto (ver [ADR-0008](./decisions/0008-identity-trust.md)).
+- **Autenticidade de identidade sem ponto de partida de confiança** — um usuário
+  sem nenhum follow, diante de um publicador sem domínio verificado e sem
+  endossos, não tem como distinguir o original do impostor; restam a UI honesta
+  (nome autodeclarado é alegação, não fato) e a barreira extra no fluxo de doação.
+  Limitação assumida (ver [ADR-0008](./decisions/0008-identity-trust.md)).
 
 ## 3.1. Responsabilidade pelo conteúdo
 

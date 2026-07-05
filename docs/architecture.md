@@ -208,10 +208,13 @@ mobile (atrás de NAT) ◀─ disca ── qualquer um            ❌ entrada bl
 - **Integridade/autenticidade do conteúdo:** todo manifesto e todo conteúdo é
   assinado; o cliente **sempre verifica** antes de confiar. Um nó malicioso não
   forja — no máximo omite (mitigado por consulta múltipla).
-- **Autenticidade de identidade (chave → publicador):** vincular uma chave pública
-  ao publicador "real" (evitar impostor que copia nome e capa) é um **problema em
-  aberto**. Candidatos: TOFU, registro assinado no bootstrap, teia de confiança.
-  Ver [ADR-0008](./decisions/0008-identity-trust.md).
+- **Autenticidade de identidade (chave → publicador):** resolvida em **camadas
+  verificáveis pelo próprio cliente** — TOFU + pinning no "seguir"; seguir direto
+  pela chave via URI/QR dos canais próprios do publicador; endosso público de 1
+  salto (`recomenda:` assinado no manifesto, com selo e priorização na
+  descoberta); verificação opcional por domínio (vínculo bidirecional
+  manifesto ↔ página). Nome autodeclarado é sempre exibido como alegação, nunca
+  como fato. Ver [ADR-0008](./decisions/0008-identity-trust.md).
 
 ## 7. Resiliência do bootstrap
 
@@ -248,7 +251,6 @@ Ver [ADR-0009](./decisions/0009-scoring-and-donations.md). Resumo do modelo:
 
 | Tema | Status | Onde |
 |------|--------|------|
-| Autenticidade de identidade (chave → publicador) | Em aberto | [ADR-0008](./decisions/0008-identity-trust.md) |
 | Agrupar "mesma obra" de publicadores diferentes na UI | Adiado | §3.1 |
 | Dicas de disponibilidade no catálogo vs consulta ao vivo | Adiado (consulta ao vivo por ora) | §4.3 |
 | Bibliotecas concretas de libp2p/IPFS para KMP | A validar na PoC | [roadmap](./roadmap.md) marco 0 |
