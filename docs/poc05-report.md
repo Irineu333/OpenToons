@@ -309,6 +309,16 @@ Marco 4 — exatamente a hipótese a priori, agora com dado.
   as exit policies bloqueiam portas incomuns. **Não é falha**: é dado a favor do caminho
   ONION (dual-homed), como o design previu. O caminho onion foi usado em todas as células
   bem-sucedidas.
+- **Requisito operacional do modo anônimo — o replicador TAMBÉM roda Tor:** como o único
+  caminho viável é o ONION (o EXIT é bloqueado por exit policy, item acima), o modo anônimo
+  impõe uma dependência **explícita e permanente ao lado do replicador**: **cada R que aceite
+  publicadores anônimos precisa rodar um daemon Tor e publicar um onion service v3**
+  (`HiddenServiceDir` + `HiddenServicePort 4100 127.0.0.1:4100` do `torrc`; nesta rodada,
+  hospedado na VPS `143.95.220.165`). Não é opcional nem inferível — é a **contraparte
+  servidor** do SOCKS do publicador: **Tor nos DOIS lados** (P = client SOCKS5h; R = onion
+  service). Custo de deploy **por nó replicador**: um daemon a mais para operar, monitorar e
+  manter de pé. Os leitores **não** são afetados — continuam lendo o IP público de R por
+  clearnet; o onion serve **só** a porta de entrada do publicador anônimo (dual-homing).
 - **C2 numa célula única exige anúncio dual-homed:** R é dual-homed (onion para P, IP público
   para o device), mas o anúncio atual carrega UM endereço. As duas pernas do C2 estão provadas
   isoladas (descoberta via Tor + fetch no device); combiná-las num run só precisa de R anunciar
@@ -321,7 +331,9 @@ Marco 4 — exatamente a hipótese a priori, agora com dado.
 ## 7. Recomendações para o Marco 4
 
 - **ADR formalizando o Tor** como alternativa de **alcançabilidade E privacidade** (hoje a dupla
-  função está implícita e espalhada entre ADR-0001 e ADR-0006).
+  função está implícita e espalhada entre ADR-0001 e ADR-0006). O ADR deve declarar **explicitamente
+  o custo bilateral**: aceitar publicadores anônimos exige que **cada replicador** rode um daemon
+  Tor + onion service (§6) — dependência de infra **por nó**, não detalhe de implementação.
 - **Superfície `push`** no módulo de rede: o publicador não-discável empurra; o receptor valida
   a editora (`PushPolicy`) antes de gravar. Provado barato e neutro nos dois backends.
 - **Seam aceitando endereços NÃO-IP** (strings opacas + filtro "discável por este backend"):
