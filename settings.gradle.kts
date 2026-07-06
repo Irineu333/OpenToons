@@ -90,3 +90,12 @@ include(":pocs:poc06:api")
 include(":pocs:poc06:trama")
 include(":pocs:poc06:node")
 include(":pocs:poc06:android")
+// poc-07: mobile em KMP para Android E iOS. Diferente das anteriores (JVM puro), aqui os
+// módulos são KMP com alvo iosArm64 (Kotlin/Native). `probe` é o portão 2.1 (risco #1): um
+// "hello Kotlin/Native" mínimo que prova empiricamente o deploy on-device antes de portar a
+// SPI/Trama. Ver openspec/changes/poc-07 e docs/pocs/poc07-report.md.
+include(":pocs:poc07:probe")
+include(":pocs:poc07:api")
+include(":pocs:poc07:trama")
+include(":pocs:poc07:node")
+include(":pocs:poc07:android")

@@ -1,0 +1,37 @@
+name: Poc07Probe
+options:
+  bundleIdPrefix: org.opentoons.poc07
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: "7BMPL2Z939"
+    CODE_SIGN_STYLE: Automatic
+    # framework estático Kotlin/Native: linkar, não embarcar
+    FRAMEWORK_SEARCH_PATHS:
+      - "$(SRCROOT)/../probe/build/bin/iosArm64/debugFramework"
+targets:
+  Poc07Probe:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.opentoons.poc07.probe
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        # o framework Kotlin/Native é estático: os frameworks de sistema que o provider
+        # CryptoKit usa não propagam via linkerOpts embarcados — declará-los aqui.
+        OTHER_LDFLAGS:
+          - "-framework"
+          - "CryptoKit"
+          - "-framework"
+          - "Security"
+          - "-framework"
+          - "Foundation"
+    dependencies:
+      - framework: ../probe/build/bin/iosArm64/debugFramework/Probe.framework
+        embed: false
