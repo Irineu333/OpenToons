@@ -1,0 +1,15 @@
+# poc-07 célula 2 — facade C-ABI (NÃO UniFFI): o mecanismo de binding para Kotlin/Native é
+# cinterop a um header C + staticlib, diferente do JNI/UniFFI do Android (poc-03/04). Este
+# crate mínimo prova o mecanismo no device antes de escalar para o rust-libp2p.
+[package]
+name = "poc07_cffi_facade"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[lib]
+name = "poc07cffi"
+crate-type = ["staticlib"]
+
+[dependencies]
+sha2 = "0.10"

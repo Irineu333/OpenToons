@@ -1,0 +1,5 @@
+headers = poc07cffi.h
+headerFilter = poc07cffi.h
+staticLibraries = libpoc07cffi.a
+libraryPaths = /Users/aiqfome/IdeaProjects/study/OpenToons/pocs/poc07/cffi-facade/target/aarch64-apple-ios-sim/release
+package = poc07cffi

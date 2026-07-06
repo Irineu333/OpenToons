@@ -17,7 +17,7 @@ publish = false
 # senão o dlopen falha com "library libuniffi_facade.so not found". Os símbolos exportados
 # continuam prefixados pelo nome do crate (opentoons_poc03_rustfacade), que é o que o
 # Kotlin gerado chama — só o nome do arquivo .so precisa ser uniffi_facade.
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["cdylib", "staticlib", "rlib"]
 name = "uniffi_facade"
 
 # gerador de bindings Kotlin do UniFFI (a partir do facade.udl)

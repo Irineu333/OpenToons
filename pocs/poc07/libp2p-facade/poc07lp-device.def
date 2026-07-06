@@ -1,0 +1,5 @@
+headers = poc07lp.h
+headerFilter = poc07lp.h
+package = poc07lp
+staticLibraries = libpoc07lp.a
+libraryPaths = /Users/aiqfome/IdeaProjects/study/OpenToons/pocs/poc07/libp2p-facade/target/aarch64-apple-ios/release

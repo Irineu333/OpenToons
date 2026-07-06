@@ -1,0 +1,20 @@
+# poc-07 célula 2 (E2E real) — facade C-ABI da libp2p para Kotlin/Native (iOS) + servidor de
+# campanha. Reusa a lógica libp2p PROVADA do poc-04 (Node cliente + ServerNode), expondo-a por
+# C-ABI (o mecanismo de binding do iOS, não o JNI/UniFFI do Android). Mesmo rust-libp2p 0.54.
+[package]
+name = "poc07_libp2p_facade"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[lib]
+name = "poc07lp"
+crate-type = ["staticlib"]
+
+[[bin]]
+name = "poc07-lp-server"
+path = "src/bin/server.rs"
+
+[dependencies]
+uniffi_facade = { path = "../../poc04/rust-facade" }
+futures = "0.3"
