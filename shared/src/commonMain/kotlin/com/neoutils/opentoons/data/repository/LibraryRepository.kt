@@ -12,10 +12,14 @@ import com.neoutils.opentoons.domain.model.ChapterProgress
 import com.neoutils.opentoons.domain.model.Layout
 import com.neoutils.opentoons.domain.model.ReadingDirection
 import com.neoutils.opentoons.domain.model.Work
+import com.neoutils.opentoons.util.ioDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import okio.FileSystem
+import okio.Path.Companion.toPath
 
 /**
  * Repositório da biblioteca offline: única porta para obras/capítulos/progresso (Room, D8).
@@ -82,16 +86,27 @@ class LibraryRepository(
     suspend fun setChapterLayoutOverride(chapterId: String, layout: Layout?) =
         chapterDao.setLayoutOverride(chapterId, layout?.name)
 
-    suspend fun deleteWork(uuid: String) = workDao.delete(uuid)
+    /**
+     * Remove a obra por completo: apaga os `.cbz` próprios do disco (copy-in), o progresso
+     * dos capítulos e as linhas do banco (capítulos caem por cascata da FK da obra).
+     */
+    suspend fun deleteWork(uuid: String) = withContext(ioDispatcher) {
+        val chapters = chapterDao.listForWork(uuid)
+        chapters.forEach { chapter ->
+            runCatching { FileSystem.SYSTEM.delete(chapter.archivePath.toPath(), mustExist = false) }
+        }
+        progressDao.deleteForChapters(chapters.map { it.id })
+        workDao.delete(uuid)
+    }
 
     /** Próximo índice de ordem para adicionar capítulo a uma obra existente. */
     suspend fun nextOrderIndex(workUuid: String): Int =
         (chapterDao.maxOrderIndex(workUuid) ?: -1) + 1
 
-    /** Persiste obra + capítulo importados (usado pelo importer). */
-    suspend fun addWorkWithChapter(work: WorkEntity, chapter: ChapterEntity) {
+    /** Persiste a obra e seus capítulos importados (usado pelo importer). */
+    suspend fun addWork(work: WorkEntity, chapters: List<ChapterEntity>) {
         workDao.upsert(work)
-        chapterDao.upsert(chapter)
+        chapters.forEach { chapterDao.upsert(it) }
     }
 
     suspend fun addChapter(chapter: ChapterEntity) = chapterDao.upsert(chapter)

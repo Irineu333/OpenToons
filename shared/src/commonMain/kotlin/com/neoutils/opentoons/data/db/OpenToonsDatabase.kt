@@ -9,7 +9,9 @@ import com.neoutils.opentoons.util.ioDispatcher
 
 @Database(
     entities = [WorkEntity::class, ChapterEntity::class, ProgressEntity::class],
-    version = 1,
+    // v2: capítulos por pasta dentro do CBZ (campo `entryDir`). Sem dados a preservar no
+    // Marco 1 → recriação destrutiva (ver `buildDatabase`).
+    version = 2,
     exportSchema = true,
 )
 @ConstructedBy(OpenToonsDatabaseConstructor::class)

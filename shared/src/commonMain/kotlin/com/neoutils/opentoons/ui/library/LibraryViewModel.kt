@@ -3,45 +3,46 @@ package com.neoutils.opentoons.ui.library
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neoutils.opentoons.di.AppGraph
-import com.neoutils.opentoons.domain.model.Work
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class LibraryViewModel(private val graph: AppGraph) : ViewModel() {
 
-    val works: StateFlow<List<Work>> = graph.library.observeLibrary()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    // Um único estado: Loading (carga inicial e import), Empty, Content e Error. O collector do
+    // Room emite Empty/Content/Error; o import emite Loading e o sucesso volta via Room (Content).
+    private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading())
+    val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
-    private val _importing = MutableStateFlow(false)
-    val importing: StateFlow<Boolean> = _importing.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    init {
+        graph.library.observeLibrary()
+            .map { works ->
+                if (works.isEmpty()) LibraryUiState.Empty else LibraryUiState.Content(works)
+            }
+            .catch { emit(LibraryUiState.Error(it.message ?: "Erro ao carregar a biblioteca")) }
+            .onEach { _uiState.value = it }
+            .launchIn(viewModelScope)
+    }
 
     fun import(file: PlatformFile) {
         viewModelScope.launch {
-            _importing.value = true
-            _error.value = null
+            _uiState.value = LibraryUiState.Loading("Importando…")
             try {
                 graph.importer.importFrom(file)
+                // Sucesso: o Room emite a nova lista (Content) pelo collector do init.
             } catch (e: Exception) {
-                _error.value = e.message ?: "Falha ao importar"
-            } finally {
-                _importing.value = false
+                _uiState.value = LibraryUiState.Error(e.message ?: "Falha ao importar")
             }
         }
     }
 
     fun toggleFavorite(uuid: String) {
         viewModelScope.launch { graph.library.toggleFavorite(uuid) }
-    }
-
-    fun clearError() {
-        _error.value = null
     }
 }

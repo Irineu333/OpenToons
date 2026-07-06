@@ -13,8 +13,9 @@ constrói esse leitor, com uma costura deliberada: a rede do Marco 2 deve entrar
 - **App leitor multiplataforma** (Android · Desktop JVM · iOS) em Compose
   Multiplatform, **separado** do futuro app publicador (decisão de topologia:
   leitor = nó leve; publicador = nó pleno, app à parte — preserva P2).
-- **Importação local de obras** por CBZ/CBR/ZIP via **FileKit** (picker comum a todas
-  as plataformas), com estratégia **copy-in**: os bytes são copiados para storage
+- **Importação local de obras** por CBZ/ZIP via **FileKit** (picker comum a todas
+  as plataformas; CBR/RAR fora de escopo — só ZIP, ver design D5), com estratégia
+  **copy-in**: os bytes são copiados para storage
   próprio do app no import, tornando o app dono do conteúdo (biblioteca offline
   robusta, imune a mover/apagar a origem).
 - **Descompactação** dos capítulos via **Okio `openZip`** (leitura de ZIP embutida,
@@ -40,7 +41,7 @@ constrói esse leitor, com uma costura deliberada: a rede do Marco 2 deve entrar
 
 ### New Capabilities
 
-- `content-import`: importar obras locais (CBZ/CBR/ZIP) — pick multiplataforma
+- `content-import`: importar obras locais (CBZ/ZIP) — pick multiplataforma
   (FileKit), copy-in para storage próprio, descompactação sob demanda (Okio), modelo
   obra/capítulo/página e o seam `Source` que o `NetworkSource` do Marco 2 atravessa.
 - `reading-experience`: a superfície de leitura — renderers paginado e long strip,

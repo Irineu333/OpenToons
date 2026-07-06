@@ -1,19 +1,33 @@
 package com.neoutils.opentoons.ui.reader
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -42,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.neoutils.opentoons.domain.model.Layout
 import com.neoutils.opentoons.domain.model.ReadingDirection
+import com.neoutils.opentoons.ui.icons.AppIcons
 import kotlin.math.roundToInt
 
 @Composable
@@ -135,15 +150,26 @@ private fun ReaderContent(
             )
         }
 
-        // Chrome imersiva única (task 6.3): barras topo/base sobre toggle.
-        AnimatedVisibility(chromeVisible, modifier = Modifier.align(Alignment.TopCenter)) {
+        // Chrome imersiva única (task 6.3): barras topo/base sobre toggle. A barra do topo
+        // desliza de cima e a da base de baixo, com fade — leitura de "sobreposição".
+        AnimatedVisibility(
+            visible = chromeVisible,
+            modifier = Modifier.align(Alignment.TopCenter),
+            enter = slideInVertically(tween(220)) { -it } + fadeIn(tween(220)),
+            exit = slideOutVertically(tween(180)) { -it } + fadeOut(tween(180)),
+        ) {
             ReaderTopBar(
                 title = state.chapter?.title ?: "",
                 onBack = onBack,
                 onSettings = { showSettings = true },
             )
         }
-        AnimatedVisibility(chromeVisible, modifier = Modifier.align(Alignment.BottomCenter)) {
+        AnimatedVisibility(
+            visible = chromeVisible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically(tween(220)) { it } + fadeIn(tween(220)),
+            exit = slideOutVertically(tween(180)) { it } + fadeOut(tween(180)),
+        ) {
             ReaderBottomBar(
                 layout = state.layout,
                 currentPage = currentPage,
@@ -172,17 +198,26 @@ private fun ReaderContent(
 private fun ReaderTopBar(title: String, onBack: () -> Unit, onSettings: () -> Unit) {
     Surface(tonalElevation = 3.dp) {
         Row(
-            Modifier.fillMaxWidth().safeContentPadding().padding(horizontal = 8.dp, vertical = 4.dp),
+            Modifier.fillMaxWidth()
+                // Só os insets do topo (status bar) + laterais — nada da nav bar de baixo.
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
+                )
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onBack) { Text("‹ Voltar") }
+            IconButton(onClick = onBack) {
+                Icon(imageVector = AppIcons.ArrowBack, contentDescription = "Voltar")
+            }
             Text(
                 title,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             )
-            TextButton(onClick = onSettings) { Text("Ajustes") }
+            IconButton(onClick = onSettings) {
+                Icon(imageVector = AppIcons.Settings, contentDescription = "Ajustes")
+            }
         }
     }
 }
@@ -200,7 +235,12 @@ private fun ReaderBottomBar(
 ) {
     Surface(tonalElevation = 3.dp) {
         Column(
-            Modifier.fillMaxWidth().safeContentPadding().padding(horizontal = 12.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth()
+                // Só os insets da base (nav bar) + laterais — nada da status bar de cima.
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+                )
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
             // Progresso por modo (task 6.4): página no paginado, % no long strip.
             val progressText = if (layout == Layout.PAGED) {
@@ -284,27 +324,48 @@ private fun ReaderSettingsDialog(
 
 @Composable
 private fun LayoutChips(selected: Layout?, detected: Layout?, onSelect: (Layout?) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        val autoLabel = detected?.let { "Auto (${it.label()})" } ?: "Auto"
-        FilterChip(
-            selected = selected == null,
-            onClick = { onSelect(null) },
-            label = { Text(autoLabel) },
-        )
-        FilterChip(
+    // Rótulos curtos cabem numa linha; FlowRow é só rede de segurança em telas estreitas.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        LayoutChip("Auto", selected = selected == null, detected = false) { onSelect(null) }
+        LayoutChip(
+            "Paginado",
             selected = selected == Layout.PAGED,
-            onClick = { onSelect(Layout.PAGED) },
-            label = { Text("Paginado") },
-        )
-        FilterChip(
+            detected = detected == Layout.PAGED,
+        ) { onSelect(Layout.PAGED) }
+        LayoutChip(
+            "Long strip",
             selected = selected == Layout.LONG_STRIP,
-            onClick = { onSelect(Layout.LONG_STRIP) },
-            label = { Text("Long strip") },
-        )
+            detected = detected == Layout.LONG_STRIP,
+        ) { onSelect(Layout.LONG_STRIP) }
     }
 }
 
-private fun Layout.label(): String = when (this) {
-    Layout.PAGED -> "Paginado"
-    Layout.LONG_STRIP -> "Long strip"
+/** Chip de layout; recebe um badge quando é o layout detectado no import (heurística). */
+@Composable
+private fun LayoutChip(
+    label: String,
+    selected: Boolean,
+    detected: Boolean,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        // Ponto dentro do chip marca o layout detectado pela heurística no import.
+        trailingIcon = if (detected) {
+            {
+                Box(
+                    Modifier
+                        .size(8.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                )
+            }
+        } else {
+            null
+        },
+    )
 }

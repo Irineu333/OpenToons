@@ -47,3 +47,17 @@ Toda a biblioteca e a leitura SHALL funcionar sem qualquer dependência de rede.
 #### Scenario: Uso sem conectividade
 - **WHEN** o dispositivo está sem conexão de rede
 - **THEN** o usuário SHALL navegar a biblioteca, abrir obras e ler capítulos normalmente
+
+### Requirement: Remover obra da biblioteca
+
+O sistema SHALL permitir remover uma obra da biblioteca. A remoção SHALL apagar também os
+arquivos próprios copiados no import (copy-in) e o progresso associado, liberando espaço, e
+SHALL ser confirmada pelo usuário por ser irreversível.
+
+#### Scenario: Remover obra
+- **WHEN** o usuário confirma a remoção de uma obra
+- **THEN** o sistema SHALL removê-la da biblioteca e apagar seus arquivos próprios e o progresso
+
+#### Scenario: Espaço liberado
+- **WHEN** uma obra é removida
+- **THEN** os bytes copiados no import (o `.cbz` próprio) SHALL ser apagados do storage do app

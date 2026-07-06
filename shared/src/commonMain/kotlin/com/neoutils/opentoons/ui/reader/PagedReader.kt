@@ -110,13 +110,22 @@ fun PagedReader(
                         },
                     )
                 }
-                .pointerInput(index) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        val next = (scale * zoom).coerceIn(1f, 5f)
-                        scale = next
-                        offset = if (next > 1f) offset + pan else Offset.Zero
-                    }
-                }
+                .then(
+                    // Só captura pan/zoom quando já ampliado (double-tap p/ ampliar). Em escala
+                    // 1, este detector consumiria o arrasto horizontal e o swipe de página do
+                    // pager não funcionaria — era o bug do "swipe não passa página".
+                    if (scale > 1f) {
+                        Modifier.pointerInput(index) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                val next = (scale * zoom).coerceIn(1f, 5f)
+                                scale = next
+                                offset = if (next > 1f) offset + pan else Offset.Zero
+                            }
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
                 .graphicsLayer {
                     if (index == pagerState.currentPage) {
                         scaleX = scale

@@ -34,13 +34,15 @@ nó pleno) sem misturar papéis num binário. **Alternativa descartada:** um app
 que lê *e* publica — mistura nó leve com nó pleno, fere a limpeza da arquitetura.
 
 ### D2 — Fonte: padrão da comunidade sob abstração `Source`
-CBZ/CBR/ZIP (o universo Tachiyomi/Mihon), atrás de uma interface `Source`. **Por quê:**
+CBZ/ZIP (o universo Tachiyomi/Mihon), atrás de uma interface `Source`. **Por quê:**
 familiar ao usuário e extensível — a rede do Marco 2 vira `NetworkSource`, mais uma
-implementação. **Alternativa:** nascer já no formato content-addressed do poc-07
-(manifest+blocks) — adiado; começar com o padrão da comunidade entrega valor antes.
+implementação. **CBR (RAR) fica fora de escopo neste marco:** a descompactação é Okio
+`openZip` (D5), que só lê ZIP; adicionar RAR exigiria outra lib — follow-up. **Alternativa:**
+nascer já no formato content-addressed do poc-07 (manifest+blocks) — adiado; começar
+com o padrão da comunidade entrega valor antes.
 
 ### D3 — Pick + acesso a arquivo: FileKit
-`FileKit.openFilePicker(type = File(["cbz","cbr","zip"]))` unifica o seletor nas
+`FileKit.openFilePicker(type = File(["cbz","zip"]))` unifica o seletor nas
 plataformas; `bookmarkData()` cobre security-scoped bookmark (iOS) e persistent URI
 permission (Android). **Por quê:** elimina o `expect/actual` de acesso a arquivo.
 

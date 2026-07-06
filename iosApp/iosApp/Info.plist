@@ -22,6 +22,8 @@
 	<true/>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

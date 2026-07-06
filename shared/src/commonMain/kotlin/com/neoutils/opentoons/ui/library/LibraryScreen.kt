@@ -1,22 +1,27 @@
 package com.neoutils.opentoons.ui.library
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,71 +37,96 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.neoutils.opentoons.domain.model.Work
+import com.neoutils.opentoons.ui.icons.AppIcons
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
 /**
  * Biblioteca em grid de capas (tela inicial — spec offline-library, tasks 7.1/7.2). Importa
- * via FileKit filtrado por `cbz/cbr/zip` (task 3.2). Favoritar por tap na estrela.
+ * via FileKit filtrado por `cbz/zip` (task 3.2). Favoritar por tap na estrela.
  */
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     onOpenWork: (String) -> Unit,
 ) {
-    val works by viewModel.works.collectAsStateWithLifecycle()
-    val importing by viewModel.importing.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val picker = rememberFilePickerLauncher(
-        type = FileKitType.File(listOf("cbz", "cbr", "zip")),
+        // Só ZIP-based (cbz/zip): a descompactação é Okio openZip. CBR = RAR e não é lido —
+        // fora do escopo deste marco (ver spec content-import / design D5).
+        type = FileKitType.File(listOf("cbz", "zip")),
     ) { file ->
         file?.let(viewModel::import)
     }
 
-    Column(Modifier.fillMaxSize().safeContentPadding()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text("Biblioteca", style = MaterialTheme.typography.headlineSmall)
-            Button(onClick = { picker.launch() }, enabled = !importing) {
-                Text(if (importing) "Importando…" else "Importar")
-            }
-        }
-
-        if (importing) {
-            CircularProgressIndicator(
-                Modifier.padding(16.dp).align(Alignment.CenterHorizontally),
-            )
-        }
-
-        if (works.isEmpty() && !importing) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    "Nenhuma obra ainda.\nToque em Importar para adicionar um CBZ/CBR/ZIP.",
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(24.dp),
+    Scaffold(
+        floatingActionButton = {
+            // Oculto durante o loading (inclui o import).
+            if (uiState !is LibraryUiState.Loading) {
+                ExtendedFloatingActionButton(
+                    onClick = { picker.launch() },
+                    text = { Text("Importar") },
+                    icon = { Text("+", style = MaterialTheme.typography.titleLarge) },
                 )
             }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(120.dp),
-                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(works, key = { it.id.uuid }) { work ->
-                    WorkCover(
-                        work = work,
-                        onClick = { onOpenWork(work.id.uuid) },
-                        onToggleFavorite = { viewModel.toggleFavorite(work.id.uuid) },
+        },
+    ) { innerPadding ->
+        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            Text(
+                "Biblioteca",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+
+            when (val state = uiState) {
+                is LibraryUiState.Loading -> CenteredBox {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator()
+                        state.message?.let { message ->
+                            Spacer(Modifier.height(12.dp))
+                            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                LibraryUiState.Empty -> CenteredBox {
+                    Text(
+                        "Nenhuma obra ainda.\nToque em Importar para adicionar um CBZ/ZIP.",
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(24.dp),
                     )
+                }
+                is LibraryUiState.Error -> CenteredBox {
+                    Text(
+                        state.message,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(24.dp),
+                    )
+                }
+                is LibraryUiState.Content -> LazyVerticalGrid(
+                    columns = GridCells.Adaptive(120.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(state.works, key = { it.id.uuid }) { work ->
+                        WorkCover(
+                            work = work,
+                            onClick = { onOpenWork(work.id.uuid) },
+                            onToggleFavorite = { viewModel.toggleFavorite(work.id.uuid) },
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun CenteredBox(content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
 }
 
 @Composable
@@ -119,15 +149,23 @@ private fun WorkCover(work: Work, onClick: () -> Unit, onToggleFavorite: () -> U
             } else {
                 Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxSize()) {}
             }
-            Text(
-                text = if (work.favorite) "★" else "☆",
-                color = Color.White,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier
+            // Scrim circular translúcido garante contraste do ícone sobre qualquer capa.
+            Box(
+                Modifier
                     .align(Alignment.TopEnd)
                     .padding(6.dp)
-                    .clickable(onClick = onToggleFavorite),
-            )
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(onClick = onToggleFavorite)
+                    .padding(5.dp),
+            ) {
+                Icon(
+                    imageVector = if (work.favorite) AppIcons.Favorite else AppIcons.FavoriteBorder,
+                    contentDescription = if (work.favorite) "Desfavoritar" else "Favoritar",
+                    tint = if (work.favorite) MaterialTheme.colorScheme.primary else Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
         Text(
             work.title,

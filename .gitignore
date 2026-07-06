@@ -17,3 +17,5 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+# iosApp.xcodeproj é gerado pelo xcodegen a partir de iosApp/project.yml
+/iosApp/iosApp.xcodeproj/

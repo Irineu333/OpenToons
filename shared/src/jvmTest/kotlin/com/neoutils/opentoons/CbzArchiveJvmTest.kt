@@ -42,4 +42,38 @@ class CbzArchiveJvmTest {
         assertEquals("bytes-of-pag2.jpg", bytes.decodeToString())
         assertTrue(bytes.isNotEmpty())
     }
+
+    private fun buildMultiChapterCbz(): String {
+        val file = File.createTempFile("opentoons-multi", ".cbz").apply { deleteOnExit() }
+        ZipOutputStream(file.outputStream()).use { zip ->
+            listOf(
+                "Chapter 2/002.jpg", "Chapter 2/001.jpg",
+                "Chapter 10/001.jpg",
+                "Chapter 1/002.jpg", "Chapter 1/001.jpg",
+            ).forEach { name ->
+                zip.putNextEntry(ZipEntry(name))
+                zip.write("x".encodeToByteArray())
+                zip.closeEntry()
+            }
+        }
+        return file.absolutePath
+    }
+
+    @Test
+    fun agrupaCapitulosPorPasta_emOrdemNatural() {
+        val chapters = CbzArchive.chapters(buildMultiChapterCbz())
+        assertEquals(listOf("Chapter 1", "Chapter 2", "Chapter 10"), chapters.map { it.dir })
+        // páginas de cada capítulo ordenadas naturalmente
+        assertEquals(listOf("Chapter 1/001.jpg", "Chapter 1/002.jpg"), chapters[0].entries)
+        assertEquals(2, chapters[1].entries.size)
+        assertEquals(1, chapters[2].entries.size)
+    }
+
+    @Test
+    fun cbzPlano_ehUmCapituloSo() {
+        val chapters = CbzArchive.chapters(buildCbz())
+        assertEquals(1, chapters.size)
+        assertEquals("", chapters[0].dir)
+        assertEquals(listOf("pag1.jpg", "pag2.jpg", "pag10.jpg"), chapters[0].entries)
+    }
 }

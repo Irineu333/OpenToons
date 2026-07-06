@@ -2,9 +2,10 @@
 
 ### Requirement: Importar obra de arquivo local
 
-O sistema SHALL permitir importar obras a partir de arquivos locais no formato
-CBZ, CBR ou ZIP, usando um seletor de arquivo nativo comum a todas as plataformas
-(Android, Desktop, iOS).
+O sistema SHALL permitir importar obras a partir de arquivos locais em contêiner ZIP
+(extensões `cbz` e `zip`), usando um seletor de arquivo nativo comum a todas as
+plataformas (Android, Desktop, iOS). Formatos baseados em RAR (`cbr`) ficam **fora de
+escopo** neste marco — a descompactação usa Okio `openZip`, que só lê ZIP (design D5).
 
 #### Scenario: Selecionar e importar um CBZ
 - **WHEN** o usuário aciona a importação e escolhe um arquivo `.cbz` no seletor
@@ -12,7 +13,7 @@ CBZ, CBR ou ZIP, usando um seletor de arquivo nativo comum a todas as plataforma
 
 #### Scenario: Filtrar por extensão suportada
 - **WHEN** o seletor de arquivo é aberto
-- **THEN** ele SHALL restringir a seleção às extensões `cbz`, `cbr` e `zip`
+- **THEN** ele SHALL restringir a seleção às extensões `cbz` e `zip`
 
 ### Requirement: Copy-in para storage próprio
 
@@ -42,6 +43,21 @@ ordenadas por ordenação natural dos nomes das entradas.
 #### Scenario: Leitura sob demanda
 - **WHEN** o leitor exibe uma página
 - **THEN** o sistema SHALL ler da entrada apenas os bytes daquela página
+
+### Requirement: Capítulos derivados da estrutura de pastas
+
+Ao importar, o sistema SHALL derivar os capítulos da estrutura de diretórios do arquivo:
+cada diretório que contém imagens SHALL virar um capítulo; um arquivo sem subpastas (imagens
+na raiz) SHALL virar um único capítulo. A ordem dos capítulos SHALL seguir a ordenação natural
+dos nomes das pastas.
+
+#### Scenario: CBZ com pastas de capítulos
+- **WHEN** o arquivo importado contém pastas, cada uma com as imagens de um capítulo
+- **THEN** o sistema SHALL criar um capítulo por pasta, na ordem natural dos nomes
+
+#### Scenario: CBZ plano
+- **WHEN** o arquivo importado tem as imagens na raiz, sem subpastas
+- **THEN** o sistema SHALL criar um único capítulo com todas as páginas
 
 ### Requirement: Modelo de dados alinhado ao manifesto futuro
 

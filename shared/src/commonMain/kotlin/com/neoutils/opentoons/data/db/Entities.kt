@@ -47,6 +47,9 @@ data class ChapterEntity(
     val workUuid: String,
     val title: String,
     val archivePath: String,
+    // Diretório dentro do `.cbz` cujas imagens são as páginas deste capítulo (vazio = raiz).
+    // Um CBZ com pastas de capítulos vira vários capítulos apontando o mesmo arquivo.
+    val entryDir: String,
     val orderIndex: Int,
     val pageCount: Int,
     val sourceKey: String,

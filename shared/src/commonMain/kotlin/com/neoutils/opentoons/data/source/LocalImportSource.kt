@@ -16,7 +16,7 @@ class LocalImportSource : Source {
     override val key: String = KEY
 
     override suspend fun pages(chapter: Chapter): List<Page> = withContext(ioDispatcher) {
-        CbzArchive.listImageEntries(chapter.archivePath)
+        CbzArchive.listImageEntries(chapter.archivePath, chapter.entryDir)
             .mapIndexed { i, entry -> Page(index = i, entryName = entry) }
     }
 

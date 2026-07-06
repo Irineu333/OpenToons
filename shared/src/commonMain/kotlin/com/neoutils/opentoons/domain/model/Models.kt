@@ -30,6 +30,7 @@ data class Chapter(
     val workUuid: String,
     val title: String,
     val archivePath: String,
+    val entryDir: String = "",
     val orderIndex: Int,
     val pageCount: Int,
     val detectedLayout: Layout,

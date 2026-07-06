@@ -1,0 +1,38 @@
+name: iosApp
+options:
+  bundleIdPrefix: com.neoutils.opentoons
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.neoutils.opentoons
+        INFOPLIST_FILE: iosApp/Info.plist
+        # O framework Kotlin/Native `Shared` é produzido pelo Gradle (pre-build script).
+        FRAMEWORK_SEARCH_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+        OTHER_LDFLAGS:
+          - $(inherited)
+          - -framework
+          - Shared
+          # Xcode 16.4/SDK 18.5 não tem UIViewLayoutRegion (introduzida em SDK mais novo que o
+          # Compose MP 1.11.1 espera). Permite o símbolo como undefined → lookup dinâmico em
+          # runtime. Só funciona se o simulador tiver a classe; senão, exige Xcode mais novo.
+          - -Wl,-U,_OBJC_CLASS_$_UIViewLayoutRegion
+        # O script do Gradle escreve fora da DerivedData.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+    preBuildScripts:
+      - name: Compile Kotlin/Native Shared Framework
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode

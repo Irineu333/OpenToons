@@ -36,6 +36,14 @@ class DetailViewModel(
         viewModelScope.launch { graph.library.setWorkLayoutOverride(workUuid, layout) }
     }
 
+    /** Exclui a obra (linhas + arquivos) e invoca [onDeleted] ao concluir (p/ voltar). */
+    fun delete(onDeleted: () -> Unit) {
+        viewModelScope.launch {
+            graph.library.deleteWork(workUuid)
+            onDeleted()
+        }
+    }
+
     /**
      * Resolve o capítulo para "continuar leitura": o primeiro não concluído com progresso,
      * senão o primeiro capítulo. `onResolved(null)` quando não há capítulos.

@@ -42,6 +42,9 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE workUuid = :workUuid ORDER BY orderIndex")
     fun observeForWork(workUuid: String): Flow<List<ChapterEntity>>
 
+    @Query("SELECT * FROM chapters WHERE workUuid = :workUuid ORDER BY orderIndex")
+    suspend fun listForWork(workUuid: String): List<ChapterEntity>
+
     @Query("SELECT * FROM chapters WHERE id = :id")
     suspend fun find(id: String): ChapterEntity?
 
@@ -65,4 +68,7 @@ interface ProgressDao {
 
     @Query("SELECT * FROM progress WHERE chapterId IN (:chapterIds)")
     fun observeForChapters(chapterIds: List<String>): Flow<List<ProgressEntity>>
+
+    @Query("DELETE FROM progress WHERE chapterId IN (:chapterIds)")
+    suspend fun deleteForChapters(chapterIds: List<String>)
 }

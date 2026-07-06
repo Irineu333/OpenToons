@@ -26,7 +26,9 @@
 ## 3. Camada Source (content-import)
 
 - [x] 3.1 Definir a interface `Source` (contrato de obra/capítulo/página) extensível para `NetworkSource`
-- [x] 3.2 Integrar FileKit: pick filtrado por `cbz/cbr/zip` nas três plataformas
+- [x] 3.2 Integrar FileKit: pick filtrado por `cbz/zip` nas três plataformas
+      <!-- CBR (RAR) removido do filtro: openZip (D5) só lê ZIP; suportar RAR = follow-up. -->
+
 - [x] 3.3 Implementar copy-in: copiar bytes para `FileKit.filesDir`; app dono do `.cbz` intacto
 - [x] 3.4 Descompactação com Okio `openZip`: leitura sob demanda por página
 - [x] 3.5 Ordenação natural dos nomes de entrada para a ordem das páginas
@@ -69,15 +71,67 @@
       <!-- Testes automatizados (commonTest/jvmTest, 9 casos): ordenação natural, heurística de layout,
            precedência/limpar override, e roundtrip real de `openZip` (list+read). Import copy-in, direção,
            progresso e offline ponta-a-ponta dependem de FileKit/Room/arquivos → E2E manual (8.2). -->
-- [~] 8.2 E2E manual nos três alvos: importar CBZ paginado (RTL) e webtoon long strip, ler e retomar
+- [x] 8.2 E2E manual nos três alvos: importar CBZ paginado (RTL) e webtoon long strip, ler e retomar
       <!-- Desktop: OK (import, grid, leitura, atalhos, barras). Android: OK (import, leitura, barras;
-           vários ajustes na seção 9). iOS: app SOBE no simulador (biblioteca/tema/Room/nav verificados via
-           screenshot) — ver 9.15; fluxo de import por picker no simulador não dirigido aqui. -->
-- [ ] 8.2 E2E manual nos três alvos: importar CBZ paginado (RTL) e webtoon long strip, ler e retomar
-      <!-- REQUER USUÁRIO: rodar os apps. Desktop `./gradlew :desktopApp:run`; Android `:androidApp:installDebug`;
-           iOS ver `iosApp/README.md` (xcodegen + xcodebuild + simctl). -->
-- [ ] 8.3 Confirmar operação 100% offline (sem qualquer chamada de rede)
-      <!-- Por construção não há dependência de rede (Coil core sem coil-network; sem ktor/http). Confirmação
-           em runtime (modo avião) = REQUER USUÁRIO. -->
-- [ ] 8.4 Validar/calibrar o threshold da heurística com corpus real de mangá e webtoon
-      <!-- REQUER USUÁRIO: corpus real. Threshold exposto em `LayoutHeuristic.STRIP_THRESHOLD`/`STRIP_PEAK`. -->
+           vários ajustes na seção 9). iOS: OK (testado pelo usuário) — app sobe, importa, lê e retoma;
+           casca via xcodegen (ver 9.15). Fluxo completo dos três alvos verificado. -->
+- [x] 8.3 Confirmar operação 100% offline (sem qualquer chamada de rede)
+      <!-- Por construção não há dependência de rede (Coil core sem coil-network; sem ktor/http) e
+           confirmado em runtime pelo usuário. -->
+- [x] 8.4 Validar/calibrar o threshold da heurística com corpus real de mangá e webtoon
+      <!-- Validado pelo usuário com corpus real: detecção funcionou (paginado vs long strip corretos).
+           Threshold `LayoutHeuristic.STRIP_THRESHOLD`/`STRIP_PEAK` mantido; override manual cobre a zona cinza. -->
+
+## 9. Ajustes pós-E2E (não previstos no plano original)
+
+Correções surgidas do E2E manual (task 8.2) em Desktop e Android — registradas para
+rastreabilidade; não estavam nas specs/tasks originais.
+
+- [x] 9.1 Tema consistente entre telas: `MaterialTheme` não pinta fundo, então a biblioteca
+      aparecia clara enquanto detalhe/leitor ficavam escuros. `AppTheme` passa a envolver o
+      conteúdo num `Surface` de `background`. (E2E desktop)
+- [x] 9.2 Contraste na tela de detalhe: cabeçalho (capa + metadados) em painel elevado
+      `surfaceContainerHigh` e capa em `Surface` com sombra. (E2E desktop)
+- [x] 9.3 Animação da chrome do leitor: slide vertical (topo/base) + fade no lugar do fade
+      padrão do `AnimatedVisibility`. (E2E desktop)
+- [x] 9.4 OOM no import (Android): copy-in em streaming via `PlatformFile.copyTo` no lugar de
+      `readBytes()+write()`, que carregava o `.cbz` inteiro em memória e estourava o heap.
+      (E2E Android — `OutOfMemoryError` em `kotlinx.io`)
+- [x] 9.5 Botão "Importar" da top bar → `ExtendedFloatingActionButton` (Scaffold), padrão do
+      gênero. (E2E Android)
+- [x] 9.6 Cache do `FileSystem` aberto por arquivo no `CbzArchive`: NÃO NECESSÁRIO. O E2E do
+      usuário no long strip não acusou travadas (a reabertura do `.cbz` a cada página lida não
+      pesou na rolagem). Otimização dispensada neste marco; reabrir se um corpus maior regredir.
+- [x] 9.7 Swipe não passava página (paginado): o `detectTransformGestures` (pan/zoom) consumia
+      o arrasto horizontal em escala 1 e bloqueava o pager. Passa a capturar pan/zoom só quando
+      já ampliado (double-tap p/ ampliar). (E2E Android; 2ª rodada)
+- [x] 9.8 Padding horizontal errado (detalhe/leitor): `safeContentPadding()` inclui as zonas de
+      gesto de navegação (insets laterais). Trocado por `safeDrawingPadding()` (barras do leitor)
+      e `Scaffold` no detalhe. (E2E Android; 2ª rodada)
+- [x] 9.9 "Continuar leitura" → `ExtendedFloatingActionButton` na tela de detalhe. (E2E Android)
+- [x] 9.10 Favoritar → botão de ícone simplificado (só a estrela, com cor primária quando ativo)
+      no lugar do TextButton com rótulo. (E2E Android)
+- [x] 9.11 Excluir obra: faltava a ação. `deleteWork` passa a apagar também os `.cbz` próprios
+      do disco (copy-in) e o progresso, além das linhas; ação "Excluir" na tela de detalhe com
+      diálogo de confirmação, voltando à biblioteca. (E2E — gestão de espaço, D-risco copy-in)
+- [x] 9.12 Badge do layout detectado movido para dentro do chip (slot `trailingIcon`), no lugar
+      da legenda/`BadgedBox` externo. (E2E Android)
+- [x] 9.13 Favoritar e excluir como IconButtons consistentes; ícones (coração/lixeira) definidos
+      como `ImageVector` a partir dos path data do Material (`AppIcons`), sem depender do
+      `material-icons-core` (descontinuado). (E2E Android)
+- [x] 9.14 Import de CBZ com pastas de capítulos: antes o arquivo virava um único capítulo.
+      Agora cada diretório com imagens vira um capítulo (`CbzArchive.chapters` agrupa por
+      pasta-pai; `entryDir` no capítulo; layout detectado por capítulo). CBZ plano continua um
+      capítulo. Schema DB v2 (recriação destrutiva). (E2E — CBZ real da internet)
+- [x] 9.15 App iOS sobe no simulador: projeto Xcode gerado por xcodegen (`iosApp/project.yml`),
+      framework `Shared` via `embedAndSignAppleFrameworkForXcode`; biblioteca/tema/Room/navegação
+      renderizam no iPhone 16 (iOS 18.5). Achados de toolchain: Compose MP 1.11.1 referencia
+      `UIViewLayoutRegion` (ausente no SDK 18.5 do Xcode 16.4) → workaround `-Wl,-U,...` +
+      deployment target 18.0 + `CADisableMinimumFrameDurationOnPhone`. Ver `iosApp/README.md`.
+      Fix definitivo = Xcode mais novo (aí remove-se o workaround).
+- [x] 9.16 Rolagem vertical bugada no long strip (desktop): as imagens só tinham `fillMaxWidth`,
+      sem altura reservada. Até o Coil carregar, o item ficava com altura ~0, a `LazyColumn`
+      compunha/disparava dezenas de loads de uma vez e a posição de rolagem "pulava" quando as
+      alturas surgiam (visível no desktop — roda de mouse precisa, sem fling). Agora cada item
+      reserva ~1 tela (`fillParentMaxHeight`) até carregar e fixa o `aspectRatio` real capturado
+      no `onSuccess` do `AsyncImage`. (E2E desktop)
