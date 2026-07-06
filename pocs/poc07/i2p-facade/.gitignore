@@ -1,0 +1,4 @@
+# artefatos de build (rebuildáveis via scripts/); não versionar
+*.a
+*.o
+deps/

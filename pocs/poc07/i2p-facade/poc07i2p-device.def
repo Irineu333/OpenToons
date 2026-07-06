@@ -1,0 +1,5 @@
+headers = poc07i2p.h
+headerFilter = poc07i2p.h
+package = poc07i2p
+staticLibraries = libpoc07i2p.a
+libraryPaths = /Users/aiqfome/IdeaProjects/study/OpenToons/pocs/poc07/i2p-facade
