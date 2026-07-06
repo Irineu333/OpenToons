@@ -12,7 +12,7 @@ risco a cada passo.
 ```
  0 ──▶ 1 ──▶ 2 ──▶ 3 ──▶ 4 ──▶ 5
  PoC   Leitor Desktop CLI  Poli- Doações
-       mobile +rede  VPS   mento
+       multi. +rede  VPS   mento
 ```
 
 ---
@@ -89,14 +89,14 @@ NAT, via DHT, com verificação de assinatura.
 **Riscos que este marco elimina:** viabilidade de libp2p em KMP/Android e custo de
 bateria/dados do DHT client.
 
-## Marco 1 — Leitor mobile completo (offline)
+## Marco 1 — Leitor multiplataforma completo (offline)
 
-**Objetivo:** um leitor de obras mobile de primeira linha, **sem rede ainda**.
+**Objetivo:** um leitor de obras multiplataforma de primeira linha, **sem rede ainda**.
 Entrega valor imediato e amadurece a UX antes de acoplar a complexidade P2P.
 
 **Escopo:**
 
-- app mobile (Android) com Compose Multiplatform;
+- **app leitor multiplataforma** (Android, Desktop, iOS) com Compose Multiplatform;
 - importação/leitura local de obras e capítulos;
 - **cache/biblioteca offline** completo;
 - experiência de leitura polida (paginação, modos de leitura, favoritos, progresso);
@@ -109,7 +109,7 @@ Entrega valor imediato e amadurece a UX antes de acoplar a complexidade P2P.
 **Concluído quando:** um usuário lê obras confortavelmente offline, com biblioteca
 e favoritos, sem qualquer dependência de rede.
 
-## Marco 2 — App desktop, v1 da rede e módulo de rede no mobile
+## Marco 2 — App desktop, v1 da rede e módulo de rede no leitor
 
 **Objetivo:** a rede nasce. Os publicadores passam a publicar; o leitor passa a
 consumir da malha.
@@ -129,7 +129,7 @@ consumir da malha.
   do seam, TCK de conformidade no CI), backend de lançamento Trama, adapter rust-libp2p
   mantido verde no CI até um gatilho disparar;
 - **replicação entre publicadores** (opt-in, com teto);
-- **módulo de rede no mobile:** o leitor do marco 1 ganha o **DHT client**,
+- **módulo de rede no leitor:** o leitor do marco 1 ganha o **DHT client**,
   descoberta de catálogo (consulta a múltiplos nós + merge), roteamento e
   download direto do detentor, com verificação de assinatura;
 - **eventos de pontuação (insumo do marco 5):** com identidade real de publicador
@@ -140,7 +140,7 @@ consumir da malha.
   [ADR-0009](./decisions/0009-scoring-and-donations.md)).
 
 **Concluído quando:** um publicador publica pelo desktop e um leitor descobre,
-baixa, verifica e lê pelo mobile — sem servidor central em lugar nenhum.
+baixa, verifica e lê pelo leitor — sem servidor central em lugar nenhum.
 
 ## Marco 3 — CLI para VPS
 

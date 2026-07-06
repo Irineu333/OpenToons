@@ -32,7 +32,7 @@ viole deve ser rejeitada.
 | # | Princípio | Implicação |
 |---|-----------|------------|
 | P1 | **Sem servidor central** | Nenhuma peça pode ser ponto único de falha ou de controle. |
-| P2 | **Sem dependência do cliente como nó pleno** | O leitor (mobile) consome sem precisar servir conteúdo. |
+| P2 | **Sem dependência do cliente como nó pleno** | O leitor consome sem precisar servir conteúdo, em qualquer plataforma. |
 | P3 | **Todo conteúdo é assinado** | O cliente sempre verifica a assinatura antes de confiar. |
 | P4 | **Sem centralização escondida** | Gateways, relays e bootstrap não podem virar gargalos disfarçados. |
 
@@ -87,7 +87,7 @@ Quem sustenta a rede é distinto de quem apenas a consome (ver [ADR-0001](./deci
 ```
 NÓS PLENOS (sustentam a malha)              NÓS LEVES (parasitam a malha)
 ┌────────────────────────────────┐         ┌──────────────────────────┐
-│ Publicador (app desktop)       │         │ Leitor (app mobile)      │
+│ Publicador (app desktop)       │         │ Leitor (multiplataforma) │
 │  · publica e assina obras      │         │  · apenas consome        │
 │  · semeia p/ seus repl.        │         │  · não serve, não guarda │
 │  · pode ficar offline          │         │  · cliente da DHT        │
@@ -108,16 +108,20 @@ NÓS PLENOS (sustentam a malha)              NÓS LEVES (parasitam a malha)
   serve. Pode ser operado **pelo próprio publicador** (seus semeadores
   persistentes) ou por um **voluntário** que fortalece a rede. Pode receber
   doações. É o **único** papel que precisa de endereço público.
-- **Leitor** — usa o app **mobile**. Um leitor de obras completo com cache
-  offline. Só consome; nunca é obrigado a servir.
+- **Leitor** — usa o **app leitor**, multiplataforma (**Android, Desktop e iOS**).
+  Um leitor de obras completo com cache offline. Só consome; nunca é obrigado a
+  servir — é **nó leve em qualquer plataforma** (P2). As restrições de bateria e
+  NAT que moldam o cliente DHT ([ADR-0005](./decisions/0005-mobile-client.md),
+  [ADR-0006](./decisions/0006-nat-and-reachability.md)) valem sobretudo para os
+  alvos móveis; o desktop é um leitor de rede melhor-comportado, mas ainda só consome.
 
 ## 5. Aplicações
 
-| App | Público | Papel na rede | Função |
-|-----|---------|---------------|--------|
-| **Desktop** | Publicadores | Nó pleno (semeador transitório) | Publicar, assinar, gerenciar o perfil, semear p/ seus replicadores |
-| **Mobile** | Leitores | Nó leve (cliente DHT) | Ler obras, cache offline, consumir a rede |
-| **CLI** | Publicadores e voluntários | Nó pleno (servidor 24/7) | Replicar e servir; sustentar a rede |
+| App | Plataformas | Papel na rede | Função |
+|-----|-------------|---------------|--------|
+| **Leitor** | Android · Desktop · iOS | Nó leve (cliente DHT) | Ler obras, cache offline, consumir a rede |
+| **Publicador** | Desktop | Nó pleno (semeador transitório) | Publicar, assinar, gerenciar o perfil, semear p/ seus replicadores |
+| **CLI** | Servidor (VPS) | Nó pleno (servidor 24/7) | Replicar e servir; sustentar a rede |
 
 ## 6. Incentivos
 
@@ -136,7 +140,7 @@ localmente** com base no consumo real do usuário (ver [ADR-0009](./decisions/00
 ## 7. Tecnologia
 
 O projeto é **Kotlin Multiplatform + Compose Multiplatform**, compartilhando lógica
-e UI entre desktop (JVM) e mobile (Android). A camada de rede (DHT, troca de
+e UI entre desktop (JVM), Android e iOS. A camada de rede (DHT, troca de
 blocos, endereçamento por conteúdo) baseia-se em conceitos de **libp2p/IPFS**; as
 bibliotecas concretas serão validadas na **Prova de Conceito** (marco 0 do
 [roadmap](./roadmap.md)).
@@ -146,9 +150,9 @@ bibliotecas concretas serão validadas na **Prova de Conceito** (marco 0 do
 | Termo | Definição |
 |-------|-----------|
 | **Nó pleno** | Nó que guarda, serve e roteia conteúdo (publicador desktop ou CLI). |
-| **Nó leve** | Nó que apenas consulta e consome (mobile); cliente da DHT. |
+| **Nó leve** | Nó que apenas consulta e consome (o leitor, em qualquer plataforma); cliente da DHT. |
 | **DHT** | Tabela hash distribuída, usada para descoberta de nós e conteúdo. |
-| **DHT client / DHT server** | Cliente faz consultas; servidor guarda rotas e roteia para outros. O mobile é *client*. |
+| **DHT client / DHT server** | Cliente faz consultas; servidor guarda rotas e roteia para outros. o leitor é *client*. |
 | **CID** | *Content Identifier* — endereço imutável derivado do hash do conteúdo. |
 | **Manifesto** | Documento assinado que descreve o estado atual de um publicador (obras, capítulos, CIDs). |
 | **obra_id** | Identificador estável de uma obra = `(chave do publicador, UUID)`. Sobrevive a novos capítulos. |

@@ -16,22 +16,23 @@ nenhum ponto único de falha.
 ## Ideia central
 
 - **P2P assimétrico, sem autoridade:** *publicadores* (desktop) e *replicadores*
-  (CLI) sustentam a rede como nós plenos; *leitores* (mobile) apenas consomem, como
-  nós leves — sem precisar servir conteúdo.
+  (CLI) sustentam a rede como nós plenos; *leitores* (**app multiplataforma:
+  Android, desktop e iOS**) apenas consomem, como nós leves — sem precisar servir
+  conteúdo.
 - **Tudo assinado:** o cliente sempre verifica a assinatura; impostores não forjam.
 - **Três planos:** anúncio (aberto) · catálogo (leve, assinado, replicável) ·
   conteúdo (pesado, réplica opt-in com teto).
-- **Sem centralização escondida:** o mobile é um *DHT client* que descobre e baixa
+- **Sem centralização escondida:** o leitor é um *DHT client* que descobre e baixa
   direto dos detentores; bootstrap é só para a entrada.
 - **Incentivo por doação direta**, guiada por pontuação calculada localmente.
 
 ## Aplicações
 
-| App | Público | Papel | Função |
-|-----|---------|-------|--------|
-| **Desktop** | Publicadores | Nó pleno | Publicar, gerenciar, replicar, servir |
-| **Mobile** | Leitores | Nó leve | Ler obras, cache offline, consumir a rede |
-| **CLI** | Voluntários | Nó pleno | Replicar e servir; sustentar a rede |
+| App | Plataformas | Papel | Função |
+|-----|-------------|-------|--------|
+| **Leitor** | Android · Desktop · iOS | Nó leve | Ler obras, cache offline, consumir a rede |
+| **Publicador** | Desktop | Nó pleno | Publicar, assinar, gerenciar, semear |
+| **CLI** | Servidor (VPS) | Nó pleno | Replicar e servir; sustentar a rede |
 
 ## Documentação
 
@@ -47,7 +48,7 @@ A documentação técnica vive em [`docs/`](./docs):
 
 ## Stack
 
-Projeto **Kotlin Multiplatform + Compose Multiplatform** (desktop JVM e Android),
+Projeto **Kotlin Multiplatform + Compose Multiplatform** (Android, desktop JVM e iOS),
 com camada de rede baseada em conceitos de **libp2p/IPFS** (bibliotecas concretas a
 validar na Prova de Conceito — marco 0).
 
