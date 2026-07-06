@@ -10,6 +10,17 @@ kotlinx-serialization = "1.9.0"
 # poc02 (design D1): primitivas cripto — única dependência não-trivial da camada de rede própria
 bouncycastle = "1.80"
 material3 = "1.11.0-alpha07"
+# Marco 1 — leitor offline (offline-reader)
+# KSP2 mudou para versionamento desacoplado (2.3.x auto-detecta o compilador Kotlin 2.4.0)
+ksp = "2.3.9"
+room = "2.8.4"                 # Room KMP estável (D8)
+androidx-sqlite = "2.6.2"      # BundledSQLiteDriver — obrigatório p/ iOS/Desktop
+coil = "3.5.0"                 # Coil 3 (decode/cache KMP, base okio) — D7
+telephoto = "0.19.0"           # zoom + sub-sampling anti-OOM — D7 (risco nº 1)
+filekit = "0.14.2"             # picker multiplataforma + storage próprio — D3/D4
+okio = "3.17.0"                # openZip: descompactação sob demanda — D5
+navigation = "2.9.2"           # navigation-compose multiplataforma — D9
+androidx-activity = "1.10.1"   # activity-compose (host Android)
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -31,6 +42,27 @@ kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-seria
 bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 
+# --- Marco 1: leitor offline ---
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
+navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigation" }
+# Room KMP + driver bundled (D8) — compiler é processado por KSP
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
+# Coil 3 (D7) — sem rede (offline); usamos fetcher próprio a partir do openZip.
+# coil-compose traz o AsyncImage/singleton (setSingletonImageLoaderFactory).
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }
+# Telephoto (D7) — zoom + sub-sampling integrados ao Coil 3
+telephoto-zoomableImageCoil = { module = "me.saket.telephoto:zoomable-image-coil3", version.ref = "telephoto" }
+telephoto-zoomable = { module = "me.saket.telephoto:zoomable", version.ref = "telephoto" }
+# FileKit (D3/D4) — picker + storage próprio (filesDir)
+filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
+filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
+# Okio (D5) — openZip para descompactação sob demanda
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -41,3 +73,5 @@ kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room", version.ref = "room" }

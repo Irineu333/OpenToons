@@ -48,6 +48,7 @@ plugins {
 }
 
 include(":desktopApp")
+include(":androidApp")
 include(":shared")
 
 // As PoCs vivem sob pocs/ e são subprojetos Gradle genuínos: o caminho lógico

@@ -13,6 +13,8 @@ dependencies {
     implementation(libs.kotlinx.coroutinesSwing)
 
     implementation(libs.compose.uiToolingPreview)
+    // Entry point usa FileKit.init diretamente (storage próprio + diálogos no desktop).
+    implementation(libs.filekit.core)
 }
 
 compose.desktop {
