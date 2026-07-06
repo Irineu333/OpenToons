@@ -108,7 +108,9 @@ O app pagaria automaticamente com base em prova de bytes servidos.
 
 - **Dois eventos locais independentes** alimentam o sistema:
   - **leitura** `{obra_id, capítulo, chave_publicador, timestamp}` — nasce no
-    **marco 1** (leitor offline); sem ele, o marco 5 estreia com histórico zero;
+    **marco 2**, quando há `chave_publicador` real a quem atribuir; no marco 1
+    (offline) a leitura não teria publicador atribuível, então registrá-la ali não
+    geraria histórico de doação útil;
   - **download** `{obra_id, capítulo, peers: [(peer, fração_bytes)], timestamp}` —
     nasce no **marco 2**, junto com a rede.
 - **Prefetch pontua**: baixar capítulos antecipadamente (funcionalidade prevista
@@ -135,4 +137,4 @@ O app pagaria automaticamente com base em prova de bytes servidos.
   registrar histórico" desliga a recomendação, e só.
 - A UX fina do card (texto, mínimo de pontos para exibir, lembrete do meio de
   pagamento) fica para o marco 5 do [roadmap](../roadmap.md); o evento de leitura,
-  para o marco 1.
+  para o marco 2.

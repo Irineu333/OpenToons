@@ -100,11 +100,11 @@ Entrega valor imediato e amadurece a UX antes de acoplar a complexidade P2P.
 - importação/leitura local de obras e capítulos;
 - **cache/biblioteca offline** completo;
 - experiência de leitura polida (paginação, modos de leitura, favoritos, progresso);
-- modelo de dados de obra/capítulo alinhado ao futuro `obra_id` e manifesto;
-- **registro local de leitura**: evento `{obra_id, capítulo, chave_publicador,
-  timestamp}` emitido a cada capítulo lido — insumo do sistema de doações do
-  marco 5 (ver [ADR-0009](./decisions/0009-scoring-and-donations.md)); o evento de
-  **download** (que pontua quem serviu) nasce no marco 2, junto com a rede.
+- modelo de dados de obra/capítulo alinhado ao futuro `obra_id` e manifesto — o
+  terreno para o registro de leitura fica **preparado**, mas o **evento em si é
+  emitido só no marco 2**: offline não há `chave_publicador` real a quem atribuir a
+  leitura, então forçá-lo aqui exigiria identidade sintética (ver
+  [ADR-0009](./decisions/0009-scoring-and-donations.md)).
 
 **Concluído quando:** um usuário lê obras confortavelmente offline, com biblioteca
 e favoritos, sem qualquer dependência de rede.
@@ -131,7 +131,13 @@ consumir da malha.
 - **replicação entre publicadores** (opt-in, com teto);
 - **módulo de rede no mobile:** o leitor do marco 1 ganha o **DHT client**,
   descoberta de catálogo (consulta a múltiplos nós + merge), roteamento e
-  download direto do detentor, com verificação de assinatura.
+  download direto do detentor, com verificação de assinatura;
+- **eventos de pontuação (insumo do marco 5):** com identidade real de publicador
+  finalmente disponível, o **evento de leitura** `{obra_id, capítulo,
+  chave_publicador, timestamp}` (movido do marco 1) passa a ser emitido a cada
+  capítulo lido — pontua quem **publicou**; e o evento de **download** — pontua quem
+  **serviu** — nasce aqui, junto com a rede. Ambos 100% locais (ver
+  [ADR-0009](./decisions/0009-scoring-and-donations.md)).
 
 **Concluído quando:** um publicador publica pelo desktop e um leitor descobre,
 baixa, verifica e lê pelo mobile — sem servidor central em lugar nenhum.
@@ -208,6 +214,7 @@ central.
 - A mecânica de incentivo/doação já está decidida
   ([ADR-0009](./decisions/0009-scoring-and-donations.md)), mas sua implementação
   fica para o fim por bloquear pouco o valor central (ler e publicar sem depender
-  de ponto único de falha) — com uma exceção: o **evento de leitura nasce no
-  marco 1**. Identidade ([ADR-0008](./decisions/0008-identity-trust.md)) segue
-  **em aberto** e é endereçada no marco 4.
+  de ponto único de falha); os eventos que a alimentam (**leitura** e **download**)
+  nascem no **marco 2**, junto com a rede — antes disso não há `chave_publicador`
+  real a que atribuí-los. Identidade ([ADR-0008](./decisions/0008-identity-trust.md))
+  segue **em aberto** e é endereçada no marco 4.
