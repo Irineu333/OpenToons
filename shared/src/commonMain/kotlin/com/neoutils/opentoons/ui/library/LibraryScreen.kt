@@ -132,7 +132,12 @@ private fun CenteredBox(content: @Composable () -> Unit) {
 
 @Composable
 private fun WorkCover(work: Work, onClick: () -> Unit, onToggleFavorite: () -> Unit) {
-    Column(Modifier.clickable(onClick = onClick)) {
+    // clip antes do clickable: o ripple segue o contorno arredondado do card inteiro (capa+título).
+    Column(
+        Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+    ) {
         Box(
             Modifier
                 .fillMaxWidth()

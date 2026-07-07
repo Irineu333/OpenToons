@@ -248,7 +248,6 @@ private fun ReaderBottomBar(
             } else {
                 "${(scrollFraction * 100).roundToInt()}%"
             }
-            Text(progressText, style = MaterialTheme.typography.labelMedium)
 
             if (layout == Layout.PAGED && pageCount > 1) {
                 Slider(
@@ -258,18 +257,25 @@ private fun ReaderBottomBar(
                 )
             }
 
+            // Progresso centralizado entre os botões de capítulo. Os Box com weight(1f) de
+            // cada lado garantem o centro real, independentemente da largura dos botões.
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(
-                    onClick = { prevChapterId?.let(onNavigateChapter) },
-                    enabled = prevChapterId != null,
-                ) { Text("‹ Capítulo") }
-                TextButton(
-                    onClick = { nextChapterId?.let(onNavigateChapter) },
-                    enabled = nextChapterId != null,
-                ) { Text("Capítulo ›") }
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    TextButton(
+                        onClick = { prevChapterId?.let(onNavigateChapter) },
+                        enabled = prevChapterId != null,
+                    ) { Text("‹ Capítulo") }
+                }
+                Text(progressText, style = MaterialTheme.typography.labelMedium)
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                    TextButton(
+                        onClick = { nextChapterId?.let(onNavigateChapter) },
+                        enabled = nextChapterId != null,
+                    ) { Text("Capítulo ›") }
+                }
             }
         }
     }

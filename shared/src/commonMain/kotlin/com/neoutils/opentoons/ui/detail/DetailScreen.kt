@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -118,56 +117,63 @@ fun DetailScreen(
                 }
             }
 
-            // Cabeçalho num painel elevado (surfaceContainerHigh) para destacar do fundo.
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 2.dp,
-            ) {
-                Row(Modifier.fillMaxWidth().padding(16.dp)) {
-                    val cover = work?.cover
+            // Tela inteira rola como superfície única: cabeçalho e capítulos na mesma
+            // LazyColumn (sem Column(verticalScroll) aninhando a lista). A TopBar/SelectionBar
+            // e o bloco de busy acima ficam fixos, com as ações sempre acessíveis.
+            LazyColumn(Modifier.fillMaxSize()) {
+                item {
+                    // Cabeçalho num painel elevado (surfaceContainerHigh) para destacar do fundo.
                     Surface(
-                        modifier = Modifier.size(width = 110.dp, height = 155.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        tonalElevation = 4.dp,
-                        shadowElevation = 2.dp,
-                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        tonalElevation = 2.dp,
                     ) {
-                        if (cover != null) {
-                            AsyncImage(
-                                model = cover,
-                                contentDescription = work?.title,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                        Row(Modifier.fillMaxWidth().padding(16.dp)) {
+                            val cover = work?.cover
+                            Surface(
+                                modifier = Modifier.size(width = 110.dp, height = 155.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                tonalElevation = 4.dp,
+                                shadowElevation = 2.dp,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                            ) {
+                                if (cover != null) {
+                                    AsyncImage(
+                                        model = cover,
+                                        contentDescription = work?.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                            }
+                            Column(Modifier.padding(start = 16.dp).weight(1f)) {
+                                Text(work?.title ?: "", style = MaterialTheme.typography.titleLarge)
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Direção: ${work?.effectiveDirection?.name ?: "-"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    "${chapters.size} capítulo(s)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
-                    Column(Modifier.padding(start = 16.dp).weight(1f)) {
-                        Text(work?.title ?: "", style = MaterialTheme.typography.titleLarge)
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Direção: ${work?.effectiveDirection?.name ?: "-"}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "${chapters.size} capítulo(s)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                 }
-            }
 
-            HorizontalDivider()
-            Text(
-                "Capítulos",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(16.dp),
-            )
+                item {
+                    // Alinha em 16.dp com a margem do cabeçalho e com o conteúdo das linhas.
+                    Text(
+                        "Capítulos",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
 
-            LazyColumn(Modifier.fillMaxSize()) {
                 items(chapters, key = { it.id }) { chapter ->
                     ChapterRow(
                         chapter = chapter,
@@ -179,7 +185,6 @@ fun DetailScreen(
                         },
                         onLongClick = { viewModel.startSelection(chapter.id) },
                     )
-                    HorizontalDivider()
                 }
             }
         }
