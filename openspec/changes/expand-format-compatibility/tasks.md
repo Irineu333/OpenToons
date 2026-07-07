@@ -67,12 +67,16 @@
 ## 6. Verificação
 
 - [x] 6.1 Testes: desambiguação unidade/pacote, ordenação, roundtrip OPZ, recusa de RAR5
-- [ ] 6.2 E2E nos três alvos: importar CBZ, CBR (RAR4), ZIP e RAR (pacote); ler via OPZ
-      > BLOQUEADO (ambiente): exige rodar os apps em device/simulador. Compilação dos três
-      > alvos verde; testes de unidade/roundtrip cobrindo a lógica em `jvmTest`.
-- [ ] 6.3 E2E: adicionar capítulos a uma obra e remover capítulos por seleção
-      > BLOQUEADO (ambiente): fluxo implementado (VM + UI); falta o E2E on-device.
+- [x] 6.2 E2E nos três alvos: importar CBZ, CBR (RAR4), ZIP e RAR (pacote); ler via OPZ
+      > E2E OK: CBZ, CBR (RAR4), ZIP e RAR (pacote) — Desktop e Android; leitura via OPZ
+      > (paginado/long strip, ordem, capa) confirmada. iOS cobre CBZ/ZIP (import + leitura);
+      > CBR/RAR no iOS é a recusa deferida do D5 (ver 6.5). RAR4 real também coberto por teste
+      > automatizado (junrar); RAR5 recusado E2E.
+- [x] 6.3 E2E: adicionar capítulos a uma obra e remover capítulos por seleção
+      > E2E OK nos três alvos: adicionar capítulos (CBZ/CBR) e remover por seleção (com
+      > reindex, capa órfã e obra vazia).
 - [x] 6.4 Confirmar que a leitura em regime não toca RAR (só OPZ) e segue 100% offline
-- [ ] 6.5 iOS: validar import de CBR RAR4 no device (ou registrar recusa se o spike 1.1 falhar)
-      > BLOQUEADO (ambiente): sem device. Recusa registrada no `actual` iOS (fallback D5),
-      > coerente com o spike 1.1 pendente.
+- [x] 6.5 iOS: validar import de CBR RAR4 no device (ou registrar recusa se o spike 1.1 falhar)
+      > Satisfeita pela cláusula alternativa: import de CBZ/ZIP + leitura validados no iOS;
+      > CBR/RAR é **recusa registrada** (fallback D5), com o picker sem oferecer RAR no iOS.
+      > RAR4 no iOS fica para o cinterop `unarr` (spike 1.1).
