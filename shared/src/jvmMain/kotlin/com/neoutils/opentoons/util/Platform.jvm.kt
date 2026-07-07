@@ -9,6 +9,9 @@ actual fun nowMillis(): Long = System.currentTimeMillis()
 
 actual val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 
+// junrar (RAR4, Java puro) cobre o Desktop.
+actual val rarImportSupported: Boolean = true
+
 actual fun readImageSize(bytes: ByteArray): ImageSize? {
     ByteArrayInputStream(bytes).use { input ->
         val iis = ImageIO.createImageInputStream(input) ?: return null

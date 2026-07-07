@@ -17,6 +17,9 @@ actual fun nowMillis(): Long = (NSDate().timeIntervalSince1970 * 1000.0).toLong(
 // Native não expõe Dispatchers.IO; Default cobre o offloading de IO do Marco 1.
 actual val ioDispatcher: CoroutineDispatcher = Dispatchers.Default
 
+// iOS/Native ainda não integra o cinterop `unarr` (spike 1.1) → RAR indisponível (fallback D5).
+actual val rarImportSupported: Boolean = false
+
 @OptIn(ExperimentalForeignApi::class)
 actual fun readImageSize(bytes: ByteArray): ImageSize? {
     if (bytes.isEmpty()) return null

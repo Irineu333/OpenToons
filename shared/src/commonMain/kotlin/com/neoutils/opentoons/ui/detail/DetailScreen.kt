@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.neoutils.opentoons.domain.model.Chapter
 import com.neoutils.opentoons.ui.icons.AppIcons
+import com.neoutils.opentoons.util.ImportFormats
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
@@ -68,9 +69,10 @@ fun DetailScreen(
 
     val selectionMode = selected.isNotEmpty()
 
-    // Adicionar capítulos: só unidade (CBZ/CBR); pacotes são recusados pelo importer (task 5.1).
+    // Adicionar capítulos: só unidade (CBZ/CBR); pacotes recusados pelo importer (task 5.1).
+    // CBR só onde a plataforma descompacta RAR (no iOS fica só CBZ — D5).
     val addPicker = rememberFilePickerLauncher(
-        type = FileKitType.File(listOf("cbz", "cbr")),
+        type = FileKitType.File(ImportFormats.unit),
     ) { file ->
         file?.let(viewModel::addChapters)
     }

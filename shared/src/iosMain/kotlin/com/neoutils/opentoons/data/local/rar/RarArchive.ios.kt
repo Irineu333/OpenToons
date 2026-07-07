@@ -10,11 +10,12 @@ package com.neoutils.opentoons.data.local.rar
 actual class RarArchive actual constructor(path: String) : AutoCloseable {
 
     init {
-        // Recusa RAR5 com a mesma mensagem das demais plataformas; depois recusa RAR em geral.
-        RarFormat.requireNotRar5(path)
+        // No iOS nenhum RAR é suportado (nem RAR4 nem RAR5) enquanto o cinterop `unarr` não
+        // fecha. Não diferencia a variante para não sugerir RAR4 (que também não roda aqui):
+        // recusa qualquer RAR com uma mensagem específica da plataforma.
         throw UnsupportedFormatException(
-            "Import de RAR/CBR ainda não disponível no iOS (cinterop unarr pendente — spike 1.1). " +
-                "Importe CBZ/ZIP; a leitura de obras já importadas segue normal.",
+            "Import de RAR/CBR ainda não disponível no iOS (suporte a RAR pendente). " +
+                "Importe CBZ ou ZIP; a leitura de obras já importadas segue normal.",
         )
     }
 

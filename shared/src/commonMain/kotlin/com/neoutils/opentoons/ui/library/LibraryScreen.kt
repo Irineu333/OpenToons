@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.neoutils.opentoons.domain.model.Work
 import com.neoutils.opentoons.ui.icons.AppIcons
+import com.neoutils.opentoons.util.ImportFormats
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
@@ -53,9 +54,9 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val picker = rememberFilePickerLauncher(
-        // Grade 2×2 (D3, task 4.4): unidade (cbz/cbr) e pacote (zip/rar). Tudo é normalizado
-        // para OPZ no import; a leitura em regime segue Okio openZip sobre OPZ.
-        type = FileKitType.File(listOf("cbz", "cbr", "zip", "rar")),
+        // Grade 2×2 (D3, task 4.4): unidade (cbz/cbr) e pacote (zip/rar). CBR/RAR só onde a
+        // plataforma descompacta RAR — no iOS ficam de fora (D5). Tudo é normalizado para OPZ.
+        type = FileKitType.File(ImportFormats.library),
     ) { file ->
         file?.let(viewModel::import)
     }

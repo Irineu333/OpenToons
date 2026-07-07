@@ -28,7 +28,8 @@
 - [x] 3.2 `actual` JVM+Android via `junrar` (RAR4)
 - [ ] 3.3 `actual` iOS/Native via cinterop `unarr` (RAR4)
       > PARCIAL: `actual` iOS presente com o **fallback documentado (D5)** — recusa RAR com
-      > mensagem clara. Integração do cinterop `unarr` depende do spike 1.1 (bloqueado).
+      > mensagem específica da plataforma (não sugere RAR4, que também não roda no iOS). O
+      > picker nem oferece CBR/RAR no iOS (task 4.4). Cinterop `unarr` depende do spike 1.1.
 - [x] 3.4 Detecção de RAR5 e recusa com mensagem clara (junrar/unarr não cobrem) — D-RAR
 - [ ] 3.5 Adicionar `junrar` (JVM/Android) e a config de cinterop `unarr` ao build
       > PARCIAL: `junrar` adicionado (JVM/Android) e compilando. Config de cinterop `unarr`
@@ -49,6 +50,9 @@
       > extrai por entrada (sem custo de cinterop), mantendo o mesmo teto de memória do ZIP; o
       > iOS (cinterop `unarr`, spike 1.1) segue recusando por ora.
 - [x] 4.4 Ampliar o filtro do FileKit para `cbz`, `cbr`, `zip`, `rar`
+      > Extensões por plataforma (`ImportFormats`/`rarImportSupported`): CBR/RAR só onde há
+      > descompactação RAR. No iOS o picker oferece só CBZ/ZIP — não sugere formatos que
+      > sempre falhariam (D5). Dentro da obra: CBZ (+CBR onde suportado).
 - [x] 4.5 Heurística de layout por capítulo lida durante a normalização (reusar Marco 1)
 - [x] 4.6 UI de progresso do import (RAR + re-zip são mais lentos que o copy-in intacto)
 
