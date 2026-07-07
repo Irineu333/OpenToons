@@ -27,8 +27,9 @@ data class WorkEntity(
 )
 
 /**
- * Capítulo: unidade endereçável, aponta o `.cbz` próprio (copy-in). `detectedLayout` vem da
- * heurística no import e é guardado **separado** de `layoutOverride` (task 4.2/5.x).
+ * Capítulo: unidade endereçável, aponta o **`.opz` do próprio capítulo**
+ * (`obras/{obra}/{capítulo}.opz`, D2). Cada OPZ é plano — `entryDir` foi aposentado (D1/D2).
+ * `detectedLayout` vem da heurística no import e é guardado **separado** de `layoutOverride`.
  */
 @Entity(
     tableName = "chapters",
@@ -46,10 +47,8 @@ data class ChapterEntity(
     @PrimaryKey val id: String,
     val workUuid: String,
     val title: String,
+    // Caminho do `.opz` deste capítulo no storage próprio (`obras/{obra}/{capítulo}.opz`).
     val archivePath: String,
-    // Diretório dentro do `.cbz` cujas imagens são as páginas deste capítulo (vazio = raiz).
-    // Um CBZ com pastas de capítulos vira vários capítulos apontando o mesmo arquivo.
-    val entryDir: String,
     val orderIndex: Int,
     val pageCount: Int,
     val sourceKey: String,

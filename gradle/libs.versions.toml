@@ -21,6 +21,7 @@ filekit = "0.14.2"             # picker multiplataforma + storage próprio — D
 okio = "3.17.0"                # openZip: descompactação sob demanda — D5
 navigation = "2.9.2"           # navigation-compose multiplataforma — D9
 androidx-activity = "1.10.1"   # activity-compose (host Android)
+junrar = "7.5.5"               # descompactação RAR4 em JVM/Android (Java puro) — D4/D5
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -62,6 +63,8 @@ filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "file
 filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
 # Okio (D5) — openZip para descompactação sob demanda
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+# junrar (D4/D5) — RAR4 em JVM/Android; RAR só no caminho de import (extract-all)
+junrar = { module = "com.github.junrar:junrar", version.ref = "junrar" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

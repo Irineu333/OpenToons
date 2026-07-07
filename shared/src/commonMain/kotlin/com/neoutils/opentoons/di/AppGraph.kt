@@ -1,7 +1,7 @@
 package com.neoutils.opentoons.di
 
 import com.neoutils.opentoons.data.db.OpenToonsDatabase
-import com.neoutils.opentoons.data.importer.CbzImporter
+import com.neoutils.opentoons.data.importer.ContentImporter
 import com.neoutils.opentoons.data.repository.LibraryRepository
 import com.neoutils.opentoons.data.source.LocalImportSource
 import com.neoutils.opentoons.domain.source.SourceRegistry
@@ -21,5 +21,5 @@ class AppGraph(database: OpenToonsDatabase) {
     /** Registro de fontes: só `LocalImportSource` no Marco 1; `NetworkSource` entra no Marco 2. */
     val sources: SourceRegistry = SourceRegistry(listOf(LocalImportSource()))
 
-    val importer: CbzImporter = CbzImporter(library)
+    val importer: ContentImporter = ContentImporter(library)
 }

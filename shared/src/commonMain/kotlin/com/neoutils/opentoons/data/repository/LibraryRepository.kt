@@ -7,6 +7,7 @@ import com.neoutils.opentoons.data.db.ProgressEntity
 import com.neoutils.opentoons.data.db.WorkDao
 import com.neoutils.opentoons.data.db.WorkEntity
 import com.neoutils.opentoons.data.db.toDomain
+import com.neoutils.opentoons.data.local.opz.OpzReader
 import com.neoutils.opentoons.domain.model.Chapter
 import com.neoutils.opentoons.domain.model.ChapterProgress
 import com.neoutils.opentoons.domain.model.Layout
@@ -87,17 +88,61 @@ class LibraryRepository(
         chapterDao.setLayoutOverride(chapterId, layout?.name)
 
     /**
-     * Remove a obra por completo: apaga os `.cbz` próprios do disco (copy-in), o progresso
-     * dos capítulos e as linhas do banco (capítulos caem por cascata da FK da obra).
+     * Remove a obra por completo: apaga a **pasta própria da obra** (`obras/{obra}/` com todos
+     * os `.opz`, D2/task 5.5), o progresso dos capítulos e as linhas do banco (capítulos caem
+     * por cascata da FK da obra).
      */
     suspend fun deleteWork(uuid: String) = withContext(ioDispatcher) {
         val chapters = chapterDao.listForWork(uuid)
+        // A pasta da obra é o pai comum dos `.opz` dos capítulos (obras/{obra}/).
+        val obraDir = chapters.firstOrNull()?.archivePath?.toPath()?.parent
         chapters.forEach { chapter ->
             runCatching { FileSystem.SYSTEM.delete(chapter.archivePath.toPath(), mustExist = false) }
+        }
+        obraDir?.let { dir ->
+            runCatching { FileSystem.SYSTEM.deleteRecursively(dir, mustExist = false) }
         }
         progressDao.deleteForChapters(chapters.map { it.id })
         workDao.delete(uuid)
     }
+
+    /**
+     * Remove os capítulos selecionados (task 5.3/5.4): apaga os `.opz` do disco e o progresso,
+     * exclui as linhas e **reindexa** o `orderIndex` dos capítulos restantes. Retorna quantos
+     * capítulos sobraram na obra (0 = obra ficou vazia — o chamador decide o que fazer).
+     */
+    suspend fun deleteChapters(workUuid: String, chapterIds: Set<String>): Int =
+        withContext(ioDispatcher) {
+            if (chapterIds.isEmpty()) return@withContext chapterDao.listForWork(workUuid).size
+            val all = chapterDao.listForWork(workUuid)
+            all.filter { it.id in chapterIds }.forEach { chapter ->
+                runCatching {
+                    FileSystem.SYSTEM.delete(chapter.archivePath.toPath(), mustExist = false)
+                }
+            }
+            progressDao.deleteForChapters(chapterIds.toList())
+            chapterDao.deleteByIds(chapterIds.toList())
+
+            // Reindexa os remanescentes para manter orderIndex contíguo (0..n-1).
+            val remaining = all.filter { it.id !in chapterIds }
+            remaining.forEachIndexed { index, chapter ->
+                if (chapter.orderIndex != index) {
+                    chapterDao.setOrderIndex(chapter.id, index)
+                }
+            }
+
+            // Capa órfã (task 5.4): se a capa apontava um `.opz` removido, re-aponta para o
+            // primeiro capítulo restante (1ª página); sem capítulos, limpa a capa.
+            val work = workDao.find(workUuid)
+            val coverAlive = work?.coverArchivePath != null &&
+                remaining.any { it.archivePath == work.coverArchivePath }
+            if (work != null && !coverAlive) {
+                val first = remaining.firstOrNull()
+                val firstPage = first?.let { OpzReader.pageNames(it.archivePath).firstOrNull() }
+                workDao.setCover(workUuid, first?.archivePath?.takeIf { firstPage != null }, firstPage)
+            }
+            remaining.size
+        }
 
     /** Próximo índice de ordem para adicionar capítulo a uma obra existente. */
     suspend fun nextOrderIndex(workUuid: String): Int =

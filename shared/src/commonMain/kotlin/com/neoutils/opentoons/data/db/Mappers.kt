@@ -24,7 +24,6 @@ fun ChapterEntity.toDomain(read: Boolean): Chapter = Chapter(
     workUuid = workUuid,
     title = title,
     archivePath = archivePath,
-    entryDir = entryDir,
     orderIndex = orderIndex,
     pageCount = pageCount,
     detectedLayout = runCatching { Layout.valueOf(detectedLayout) }.getOrDefault(Layout.PAGED),

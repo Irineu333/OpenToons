@@ -30,6 +30,9 @@ interface WorkDao {
     @Query("UPDATE works SET direction = :direction WHERE uuid = :uuid")
     suspend fun setDirection(uuid: String, direction: String)
 
+    @Query("UPDATE works SET coverArchivePath = :archivePath, coverEntryName = :entryName WHERE uuid = :uuid")
+    suspend fun setCover(uuid: String, archivePath: String?, entryName: String?)
+
     @Query("DELETE FROM works WHERE uuid = :uuid")
     suspend fun delete(uuid: String)
 }
@@ -50,6 +53,12 @@ interface ChapterDao {
 
     @Query("UPDATE chapters SET layoutOverride = :layout WHERE id = :id")
     suspend fun setLayoutOverride(id: String, layout: String?)
+
+    @Query("UPDATE chapters SET orderIndex = :orderIndex WHERE id = :id")
+    suspend fun setOrderIndex(id: String, orderIndex: Int)
+
+    @Query("DELETE FROM chapters WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
 
     @Query("SELECT MAX(orderIndex) FROM chapters WHERE workUuid = :workUuid")
     suspend fun maxOrderIndex(workUuid: String): Int?

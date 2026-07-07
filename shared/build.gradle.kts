@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    // Manifesto OPZ (D7): kotlinx-serialization-json para o `manifest.json` por capítulo.
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -62,10 +64,23 @@ kotlin {
             implementation(libs.filekit.core)
             implementation(libs.filekit.dialogs.compose)
             implementation(libs.okio)
+
+            // Manifesto OPZ (D7) — escritor OPZ é pura-Kotlin (ZIP STORED sobre Okio).
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutinesCore)
+        }
+
+        // RAR4 (D4/D5): `junrar` é Java puro e serve JVM e Android — o `actual` de
+        // `RarArchive` é idêntico nos dois. iOS/Native usa cinterop `unarr` (spike 1.1);
+        // enquanto o spike não fecha, o `actual` iOS recusa RAR (fallback documentado D5).
+        jvmMain.dependencies {
+            implementation(libs.junrar)
+        }
+        androidMain.dependencies {
+            implementation(libs.junrar)
         }
     }
 }

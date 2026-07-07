@@ -20,17 +20,17 @@ data class Work(
 }
 
 /**
- * Capítulo: unidade endereçável (≈ bloco/CID no futuro). `archivePath` aponta o `.cbz`
- * próprio (copy-in, D4). `detectedLayout` vem da heurística no import (D6) e é guardado
- * separado de `layoutOverride`. `sourceKey` seleciona a `Source` que serve as páginas —
- * "local" no Marco 1, "network" no Marco 2 (seam da spec content-import).
+ * Capítulo: unidade endereçável (≈ bloco/CID no futuro). `archivePath` aponta o **`.opz`
+ * do próprio capítulo** (`obras/{obra}/{capítulo}.opz`, D2) — cada OPZ é plano, então
+ * `entryDir` foi aposentado (D1/D2). `detectedLayout` vem da heurística no import (D6) e é
+ * guardado separado de `layoutOverride`. `sourceKey` seleciona a `Source` que serve as
+ * páginas — "local" no Marco 1, "network" no Marco 2 (seam da spec content-import).
  */
 data class Chapter(
     val id: String,
     val workUuid: String,
     val title: String,
     val archivePath: String,
-    val entryDir: String = "",
     val orderIndex: Int,
     val pageCount: Int,
     val detectedLayout: Layout,

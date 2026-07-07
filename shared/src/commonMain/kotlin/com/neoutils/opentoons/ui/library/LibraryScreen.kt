@@ -43,7 +43,7 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
 /**
  * Biblioteca em grid de capas (tela inicial — spec offline-library, tasks 7.1/7.2). Importa
- * via FileKit filtrado por `cbz/zip` (task 3.2). Favoritar por tap na estrela.
+ * via FileKit filtrado por `cbz/cbr/zip/rar` (task 4.4). Favoritar por tap na estrela.
  */
 @Composable
 fun LibraryScreen(
@@ -53,9 +53,9 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val picker = rememberFilePickerLauncher(
-        // Só ZIP-based (cbz/zip): a descompactação é Okio openZip. CBR = RAR e não é lido —
-        // fora do escopo deste marco (ver spec content-import / design D5).
-        type = FileKitType.File(listOf("cbz", "zip")),
+        // Grade 2×2 (D3, task 4.4): unidade (cbz/cbr) e pacote (zip/rar). Tudo é normalizado
+        // para OPZ no import; a leitura em regime segue Okio openZip sobre OPZ.
+        type = FileKitType.File(listOf("cbz", "cbr", "zip", "rar")),
     ) { file ->
         file?.let(viewModel::import)
     }
@@ -91,7 +91,7 @@ fun LibraryScreen(
                 }
                 LibraryUiState.Empty -> CenteredBox {
                     Text(
-                        "Nenhuma obra ainda.\nToque em Importar para adicionar um CBZ/ZIP.",
+                        "Nenhuma obra ainda.\nToque em Importar para adicionar um CBZ, CBR, ZIP ou RAR.",
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(24.dp),

@@ -34,7 +34,11 @@ class LibraryViewModel(private val graph: AppGraph) : ViewModel() {
         viewModelScope.launch {
             _uiState.value = LibraryUiState.Loading("Importando…")
             try {
-                graph.importer.importFrom(file)
+                // Progresso do import (task 4.6): RAR + re-zip STORED são mais lentos que o
+                // copy-in intacto do Marco 1; a UI reflete a etapa/capítulo em conversão.
+                graph.importer.importWork(file) { message ->
+                    _uiState.value = LibraryUiState.Loading(message)
+                }
                 // Sucesso: o Room emite a nova lista (Content) pelo collector do init.
             } catch (e: Exception) {
                 _uiState.value = LibraryUiState.Error(e.message ?: "Falha ao importar")
