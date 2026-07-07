@@ -8,7 +8,7 @@ import okio.openZip
 
 /**
  * Contêiner de origem já aberto (task 4.1): lista as entradas-arquivo e serve os bytes por
- * nome. Abstrai ZIP (Okio `openZip`, sob demanda) e RAR (`RarArchive.extractAll`, não-lazy —
+ * nome. Abstrai ZIP (Okio `openZip`, sob demanda) e RAR (`RarArchive`, extração por-entrada —
  * D5) atrás de um contrato único para o pipeline de import.
  */
 interface ArchiveReader : AutoCloseable {
@@ -63,7 +63,7 @@ class ZipArchiveReader(private val path: String) : ArchiveReader {
 
 /**
  * Leitor de contêiner RAR (CBR/RAR) via [RarArchive]: lista os nomes e extrai cada entrada
- * **sob demanda** (mantém o arquivo aberto — precisa de [close]). RAR5 é recusado por
+ * **por-entrada, sob demanda** (mantém o arquivo aberto — precisa de [close]). RAR5 é recusado por
  * [RarArchive]. Usar dentro de `use { }` para fechar o handle.
  */
 class RarArchiveReader(path: String) : ArchiveReader {

@@ -74,8 +74,8 @@ kotlin {
         }
 
         // RAR4 (D4/D5): `junrar` é Java puro e serve JVM e Android — o `actual` de
-        // `RarArchive` é idêntico nos dois. iOS/Native usa cinterop `unarr` (spike 1.1);
-        // enquanto o spike não fecha, o `actual` iOS recusa RAR (fallback documentado D5).
+        // `RarArchive` é idêntico nos dois. RAR no iOS é **não-objetivo** (sem cinterop
+        // `unarr`): o `actual` iOS recusa RAR por design — comportamento final, não fallback.
         jvmMain.dependencies {
             implementation(libs.junrar)
         }
