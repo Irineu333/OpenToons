@@ -60,13 +60,17 @@ class RescanJvmTest {
         }
         WorkManifestStore.write(
             fs, obraDir,
-            WorkManifest(obraId = obraId, title = "Título do Disco", direction = "RTL", cover = WorkCover(chapterId, "001.jpg")),
+            WorkManifest(
+                obraId = obraId, title = "Título do Disco", description = "Sinopse do Disco",
+                direction = "RTL", cover = WorkCover(chapterId, "001.jpg"),
+            ),
         )
 
         // Índice do banco DIVERGENTE + estado pessoal (favorito/overrides/progresso).
         repo.addWork(
             WorkEntity(
                 uuid = obraId, publisherKey = null, title = "Título Velho do Banco",
+                description = "Sinopse velha do banco",
                 coverPath = null, direction = "LTR", directionOverride = ReadingDirection.RTL.name,
                 layoutOverride = null, favorite = true, createdAt = 123L,
             ),
@@ -82,9 +86,10 @@ class RescanJvmTest {
 
         repo.rescanFromDisk(obrasRoot)
 
-        // Disco vence no DADO.
+        // Disco vence no DADO (título, description e direction vêm do work.json).
         val work = repo.work(obraId)!!
         assertEquals("Título do Disco", work.title)
+        assertEquals("Sinopse do Disco", work.description) // description propagada do work.json
         assertEquals(ReadingDirection.RTL, work.direction) // direction detectada = disco
 
         // Estado pessoal preservado por id.

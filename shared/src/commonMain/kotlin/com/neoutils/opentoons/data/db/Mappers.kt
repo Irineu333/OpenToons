@@ -12,6 +12,7 @@ import com.neoutils.opentoons.domain.model.WorkId
 fun WorkEntity.toDomain(): Work = Work(
     id = WorkId(uuid = uuid, publisherKey = publisherKey),
     title = title,
+    description = description,
     coverPath = coverPath,
     direction = runCatching { ReadingDirection.valueOf(direction) }.getOrDefault(ReadingDirection.LTR),
     directionOverride = directionOverride?.let { runCatching { ReadingDirection.valueOf(it) }.getOrNull() },

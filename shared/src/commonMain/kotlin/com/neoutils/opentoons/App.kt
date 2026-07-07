@@ -14,9 +14,12 @@ import com.neoutils.opentoons.data.image.ArchiveImageFetcher
 import com.neoutils.opentoons.data.image.ArchiveImageKeyer
 import com.neoutils.opentoons.data.image.CoverImageFetcher
 import com.neoutils.opentoons.data.image.CoverImageKeyer
+import com.neoutils.opentoons.data.image.ThumbnailImageFetcher
+import com.neoutils.opentoons.data.image.ThumbnailImageKeyer
 import com.neoutils.opentoons.di.AppGraph
 import com.neoutils.opentoons.ui.detail.DetailScreen
 import com.neoutils.opentoons.ui.detail.DetailViewModel
+import com.neoutils.opentoons.ui.importer.ImportViewModel
 import com.neoutils.opentoons.ui.library.LibraryScreen
 import com.neoutils.opentoons.ui.library.LibraryViewModel
 import com.neoutils.opentoons.ui.reader.ReaderScreen
@@ -39,6 +42,9 @@ fun App(graph: AppGraph) {
                 // Capa de obra (cover.webp) — grade/detalhe leem o arquivo derivado, não o .opz.
                 add(CoverImageFetcher.Factory())
                 add(CoverImageKeyer())
+                // Thumbnail em memória — galeria de capa na revisão de import (sem disco).
+                add(ThumbnailImageFetcher.Factory())
+                add(ThumbnailImageKeyer())
             }
             .build()
     }
@@ -50,6 +56,7 @@ fun App(graph: AppGraph) {
             composable("library") {
                 LibraryScreen(
                     viewModel = viewModel { LibraryViewModel(graph) },
+                    importViewModel = viewModel { ImportViewModel(graph) },
                     onOpenWork = { uuid -> navController.navigate("detail/$uuid") },
                 )
             }

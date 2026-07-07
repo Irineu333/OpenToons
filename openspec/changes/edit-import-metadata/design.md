@@ -88,13 +88,27 @@ revisão continue apontando o mesmo capítulo quando o OPZ é gravado.
   vence").
 - **UI:** `DetailScreen` exibe a descrição quando não vazia; omite a área quando vazia.
 
-### D5 — Estado de revisão na camada de UI
+### D5 — Import como modal próprio, isolado da biblioteca
 
-`LibraryUiState` ganha um estado `Reviewing(draft)` (ou equivalente) entre a seleção e o
-import. `LibraryViewModel` expõe `prepareImport(file)`, `confirmImport(edits)` e
-`cancelImport()`. `LibraryScreen` renderiza o formulário de revisão (campo de título, campo de
-descrição multilinha, galeria de capa com seleção) sobre esse estado. O progresso da
-materialização (`onProgress`) segue como hoje, agora disparado no `confirmImport`.
+O fluxo de revisão vive num **modal com ViewModel próprio** (`ui.importer`), não dentro da
+`LibraryScreen`. Isso mantém a biblioteca com responsabilidade única (listar/favoritar) e evita
+a lógica de overlay que seria necessária para impedir o Room de sobrescrever a revisão.
+
+- `ImportViewModel` é dono do fluxo em duas fases: `start(file)` (Fase A — `prepare`, abre a
+  revisão), `confirm(edits)` (Fase B — `commit`, materializa e fecha) e `cancel()` (descarta a
+  origem retida). Seu `ImportUiState` = `Hidden | Loading(message) | Reviewing(draft) | Error`.
+- `ImportDialog` renderiza o modal a partir desse estado: spinner no processamento, formulário
+  (título, descrição multilinha, galeria de capa) na revisão, mensagem no erro. Durante o
+  processamento o modal **não** é dispensável (não cancela um save a meio).
+- `LibraryScreen` só dispara o seletor e delega o arquivo ao `ImportViewModel.start`; hospeda o
+  `ImportDialog` como overlay. `LibraryViewModel`/`LibraryUiState` voltam ao mínimo
+  (Loading/Empty/Content/Error) — **o sucesso do import chega sozinho pelo Room** (o commit
+  grava no banco, o collector emite Content), sem acoplamento entre os dois ViewModels.
+
+**Por quê modal separado (vs. estado na `LibraryScreen`):** a primeira iteração pôs o formulário
+na própria `LibraryScreen`, o que a deixou complexa (form + grade + overlay no mesmo lugar) e
+fora de responsabilidade. Um modal com ViewModel próprio isola o fluxo, dá um ponto natural de
+`Dialog` e desacopla a biblioteca do import.
 
 ## Risks / Trade-offs
 

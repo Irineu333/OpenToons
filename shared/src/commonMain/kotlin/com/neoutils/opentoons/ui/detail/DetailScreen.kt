@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -147,19 +148,34 @@ fun DetailScreen(
                                     )
                                 }
                             }
-                            Column(Modifier.padding(start = 16.dp).weight(1f)) {
+                            // heightIn(min = capa): quando a descrição é curta, o Spacer com peso
+                            // empurra as labels para a base (alinhadas ao rodapé da capa); quando
+                            // longa, o bloco cresce e as labels seguem logo abaixo do texto.
+                            Column(
+                                Modifier
+                                    .padding(start = 16.dp)
+                                    .weight(1f)
+                                    .heightIn(min = 155.dp),
+                            ) {
                                 Text(work?.title ?: "", style = MaterialTheme.typography.titleLarge)
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Direção: ${work?.effectiveDirection?.name ?: "-"}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Text(
-                                    "${chapters.size} capítulo(s)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                // Descrição (dado do work.json, editada no import): bloco próprio,
+                                // com espaço para textos longos; omitida quando vazia.
+                                work?.description?.takeIf { it.isNotBlank() }?.let { description ->
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        description,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+
+                                Spacer(Modifier.weight(1f).height(12.dp))
+
+                                // Demais detalhes viram labels compactas, separadas da descrição.
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    MetaLabel(work?.effectiveDirection?.name ?: "-")
+                                    MetaLabel("${chapters.size} cap.")
+                                }
                             }
                         }
                     }
@@ -362,6 +378,22 @@ private fun ChapterRow(
             )
         }
         if (chapter.read && !selectionMode) Text("lido", style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+/** Label compacta (pílula) para um detalhe da obra: direção, quantidade de capítulos etc. */
+@Composable
+private fun MetaLabel(text: String) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
     }
 }
 

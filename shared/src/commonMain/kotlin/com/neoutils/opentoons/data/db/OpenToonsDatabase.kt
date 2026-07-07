@@ -9,11 +9,10 @@ import com.neoutils.opentoons.util.ioDispatcher
 
 @Database(
     entities = [WorkEntity::class, ChapterEntity::class, ProgressEntity::class],
-    // v4: split estado × dado (add-work-manifest, D6). `WorkEntity` troca coverArchivePath/
-    // coverEntryName por `coverPath` (cover.webp) e ganha `directionOverride`. Pré-release,
-    // sem dados a preservar → recriação destrutiva (D8, ver `buildDatabase`; precedente da
-    // task 9.14 do Marco 1 e da v3).
-    version = 4,
+    // v5: `WorkEntity` ganha `description` (edit-import-metadata) — dado editável no import,
+    // espelho do work.json. Pré-release, sem dados a preservar → recriação destrutiva
+    // (D8, ver `buildDatabase`; precedente da v4 e da task 9.14 do Marco 1).
+    version = 5,
     exportSchema = true,
 )
 @ConstructedBy(OpenToonsDatabaseConstructor::class)

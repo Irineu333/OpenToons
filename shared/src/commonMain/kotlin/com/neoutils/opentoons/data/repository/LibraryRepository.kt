@@ -181,6 +181,7 @@ class LibraryRepository(
                     uuid = obraId,
                     publisherKey = manifest.chavePublicador,
                     title = manifest.title,
+                    description = manifest.description,
                     coverPath = coverPath,
                     direction = manifest.direction,
                     directionOverride = prior?.directionOverride,

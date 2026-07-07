@@ -9,6 +9,7 @@ package com.neoutils.opentoons.domain.model
 data class Work(
     val id: WorkId,
     val title: String,
+    val description: String = "",
     val coverPath: String?,
     val direction: ReadingDirection = ReadingDirection.LTR,
     val directionOverride: ReadingDirection? = null,
@@ -75,3 +76,16 @@ data class ArchiveImage(
 data class CoverImage(
     val path: String,
 )
+
+/**
+ * Thumbnail **em memória** (bytes já codificados), usada como chave de load do Coil na revisão
+ * de import (edit-import-metadata): a galeria de capa mostra candidatas **sem gravar em disco**
+ * (a origem só é materializada ao confirmar). [key] é a chave estável de cache (o `chapterId`).
+ */
+data class ThumbnailImage(
+    val key: String,
+    val bytes: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean = other is ThumbnailImage && other.key == key
+    override fun hashCode(): Int = key.hashCode()
+}

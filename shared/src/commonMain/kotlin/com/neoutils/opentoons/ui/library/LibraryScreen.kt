@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -38,32 +36,37 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.neoutils.opentoons.domain.model.Work
 import com.neoutils.opentoons.ui.icons.AppIcons
+import com.neoutils.opentoons.ui.importer.ImportDialog
+import com.neoutils.opentoons.ui.importer.ImportViewModel
 import com.neoutils.opentoons.util.ImportFormats
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
 /**
- * Biblioteca em grid de capas (tela inicial — spec offline-library, tasks 7.1/7.2). Importa
- * via FileKit filtrado por `cbz/cbr/zip/rar` (task 4.4). Favoritar por tap na estrela.
+ * Biblioteca em grid de capas (tela inicial — spec offline-library). Só lista/favorita obras: o
+ * import é responsabilidade do **modal próprio** (`ui.importer`). O botão "Importar" abre o
+ * seletor e delega o arquivo ao [ImportViewModel]; a grade se atualiza sozinha pelo Room quando
+ * a obra é materializada.
  */
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel,
+    importViewModel: ImportViewModel,
     onOpenWork: (String) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val picker = rememberFilePickerLauncher(
-        // Grade 2×2 (D3, task 4.4): unidade (cbz/cbr) e pacote (zip/rar). CBR/RAR só onde a
-        // plataforma descompacta RAR — no iOS ficam de fora (D5). Tudo é normalizado para OPZ.
+        // Grade 2×2 (D3): unidade (cbz/cbr) e pacote (zip/rar). CBR/RAR só onde a plataforma
+        // descompacta RAR — no iOS ficam de fora (D5). Tudo é normalizado para OPZ.
         type = FileKitType.File(ImportFormats.library),
     ) { file ->
-        file?.let(viewModel::import)
+        // Delega ao modal de import (Fase A: processa e abre a revisão, sem gravar nada).
+        file?.let(importViewModel::start)
     }
 
     Scaffold(
         floatingActionButton = {
-            // Oculto durante o loading (inclui o import).
             if (uiState !is LibraryUiState.Loading) {
                 ExtendedFloatingActionButton(
                     onClick = { picker.launch() },
@@ -81,15 +84,7 @@ fun LibraryScreen(
             )
 
             when (val state = uiState) {
-                is LibraryUiState.Loading -> CenteredBox {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        state.message?.let { message ->
-                            Spacer(Modifier.height(12.dp))
-                            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
+                is LibraryUiState.Loading -> CenteredBox { CircularProgressIndicator() }
                 LibraryUiState.Empty -> CenteredBox {
                     Text(
                         "Nenhuma obra ainda.\nToque em Importar para adicionar um ${ImportFormats.libraryLabel}.",
@@ -123,6 +118,9 @@ fun LibraryScreen(
             }
         }
     }
+
+    // Modal de import (edit-import-metadata): overlay próprio, dono do fluxo de revisão.
+    ImportDialog(importViewModel)
 }
 
 @Composable

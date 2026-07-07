@@ -33,6 +33,8 @@ class AppGraph(database: OpenToonsDatabase) {
      * for recriado (schema destrutivo, D8), o disco repovoa a biblioteca.
      */
     suspend fun rescanLibrary() {
+        // Limpa temps órfãos de import (draft abandonado se o app morreu na revisão — D1).
+        importer.cleanupOrphanTemps()
         val obrasRoot = FileKit.filesDir.path.toPath() / "obras"
         library.rescanFromDisk(obrasRoot)
     }

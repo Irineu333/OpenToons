@@ -3,7 +3,6 @@ package com.neoutils.opentoons.ui.library
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neoutils.opentoons.di.AppGraph
-import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,9 +14,9 @@ import kotlinx.coroutines.launch
 
 class LibraryViewModel(private val graph: AppGraph) : ViewModel() {
 
-    // Um único estado: Loading (carga inicial e import), Empty, Content e Error. O collector do
-    // Room emite Empty/Content/Error; o import emite Loading e o sucesso volta via Room (Content).
-    private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading())
+    // Estado único da biblioteca: Loading (carga inicial), Empty, Content e Error. O import não
+    // vive aqui — é um modal próprio (ui.importer); o sucesso volta pelo collector do Room.
+    private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     init {
@@ -33,22 +32,6 @@ class LibraryViewModel(private val graph: AppGraph) : ViewModel() {
             .catch { emit(LibraryUiState.Error(it.message ?: "Erro ao carregar a biblioteca")) }
             .onEach { _uiState.value = it }
             .launchIn(viewModelScope)
-    }
-
-    fun import(file: PlatformFile) {
-        viewModelScope.launch {
-            _uiState.value = LibraryUiState.Loading("Importando…")
-            try {
-                // Progresso do import (task 4.6): RAR + re-zip STORED são mais lentos que o
-                // copy-in intacto do Marco 1; a UI reflete a etapa/capítulo em conversão.
-                graph.importer.importWork(file) { message ->
-                    _uiState.value = LibraryUiState.Loading(message)
-                }
-                // Sucesso: o Room emite a nova lista (Content) pelo collector do init.
-            } catch (e: Exception) {
-                _uiState.value = LibraryUiState.Error(e.message ?: "Falha ao importar")
-            }
-        }
     }
 
     fun toggleFavorite(uuid: String) {

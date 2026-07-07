@@ -20,6 +20,8 @@ data class WorkEntity(
     @PrimaryKey val uuid: String,
     val publisherKey: String?,
     val title: String,
+    // Descrição editável no import (dado do work.json; vazia por default). Índice do disco.
+    val description: String,
     val coverPath: String?,
     val direction: String,
     val directionOverride: String?,

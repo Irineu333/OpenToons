@@ -19,6 +19,9 @@ data class WorkManifest(
     val obraId: String,
     val chavePublicador: String? = null,
     val title: String,
+    // Texto livre editável na revisão do import (opcional). Forward-compatible: manifestos
+    // antigos sem o campo desserializam para vazio (default).
+    val description: String = "",
     val direction: String,
     val cover: WorkCover? = null,
 ) {

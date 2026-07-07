@@ -30,6 +30,7 @@ class WorkManifestJvmTest {
         val manifest = WorkManifest(
             obraId = "obra-1",
             title = "Minha Obra",
+            description = "Uma sinopse editada no import",
             direction = "RTL",
             cover = WorkCover(chapterId = "cap-1", entryName = "001.jpg"),
         )
@@ -39,6 +40,7 @@ class WorkManifestJvmTest {
         assertNotNull(read)
         assertEquals("obra-1", read.obraId)
         assertEquals("Minha Obra", read.title)
+        assertEquals("Uma sinopse editada no import", read.description)
         assertEquals("RTL", read.direction)
         assertEquals("cap-1", read.cover?.chapterId)
         assertEquals("001.jpg", read.cover?.entryName)
@@ -49,5 +51,21 @@ class WorkManifestJvmTest {
     @Test
     fun read_semArquivo_retornaNull() {
         assertNull(WorkManifestStore.read(FileSystem.SYSTEM, tempObraDir()))
+    }
+
+    @Test
+    fun read_manifestoAntigoSemDescription_desserializaVazio() {
+        // Forward-compat (edit-import-metadata): um work.json anterior ao campo `description`
+        // deve reler com description vazia (default), sem falhar.
+        val obraDir = tempObraDir()
+        val legacyJson = """
+            {"version":1,"obraId":"obra-legado","title":"Obra Legada","direction":"LTR"}
+        """.trimIndent()
+        FileSystem.SYSTEM.write(WorkManifestStore.pathIn(obraDir)) { write(legacyJson.encodeToByteArray()) }
+
+        val read = WorkManifestStore.read(FileSystem.SYSTEM, obraDir)
+        assertNotNull(read)
+        assertEquals("Obra Legada", read.title)
+        assertEquals("", read.description)
     }
 }
