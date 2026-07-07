@@ -53,8 +53,7 @@ constrói esse leitor, com uma costura deliberada: a rede do Marco 2 deve entrar
 
 ### Modified Capabilities
 
-<!-- Nenhuma: as specs existentes (kmp-p2p-spi, ios-native-campaign, poc07-report)
-     são artefatos de POC de rede; o Marco 1 não altera requisitos delas. -->
+<!-- Nenhuma: o Marco 1 não altera requisitos de capabilities existentes. -->
 
 ## Impact
 
