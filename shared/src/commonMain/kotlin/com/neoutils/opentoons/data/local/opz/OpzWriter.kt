@@ -3,17 +3,12 @@ package com.neoutils.opentoons.data.local.opz
 import com.neoutils.opentoons.domain.model.Layout
 import com.neoutils.opentoons.domain.model.ReadingDirection
 import com.neoutils.opentoons.util.ImageSize
+import com.neoutils.opentoons.util.LayoutHeuristic
+import com.neoutils.opentoons.util.readImageSize
 import kotlinx.serialization.json.Json
 import okio.BufferedSink
 import okio.FileSystem
 import okio.Path
-
-/** Página a gravar no OPZ: nome plano da entrada, bytes e dimensões (para o manifesto). */
-class OpzPageInput(
-    val name: String,
-    val bytes: ByteArray,
-    val size: ImageSize? = null,
-)
 
 /**
  * Escritor OPZ pura-Kotlin (design D6, task 2.2): grava um contêiner ZIP com entradas
@@ -21,9 +16,10 @@ class OpzPageInput(
  * mais o `manifest.json` (task 2.1). STORED dá leitura zero-copy na leitura em regime e
  * dispensa qualquer dependência nativa de *escrita*: o `openZip` do Okio reabre o resultado.
  *
- * Imagens já vêm comprimidas (jpg/webp/png); re-DEFLATE ganharia ~1% e custaria CPU em toda
- * leitura de página — por isso STORED (D1). Os offsets do diretório central são rastreados
- * manualmente conforme os bytes vão para o `Okio.Sink` (não há posição no sink).
+ * **Streaming (pico de memória = 1 página):** as páginas são fornecidas via [block] e cada
+ * uma é gravada na hora e descartada — nunca se mantém o capítulo inteiro em memória (o import
+ * de volumes grandes, ex. ~284 MB, estourava o heap do Android). Só metadados por página (nome,
+ * CRC, tamanho, offset, dims) ficam retidos, para o diretório central e o manifesto no fim.
  */
 object OpzWriter {
 
@@ -36,39 +32,83 @@ object OpzWriter {
     private const val FLAG_UTF8 = 0x0800 // bit 11: nomes de entrada em UTF-8
     private const val METHOD_STORED = 0
 
+    /** Resultado do write: contagem de páginas, layout detectado e a 1ª página (capa). */
+    class Result(
+        val pageCount: Int,
+        val detectedLayout: Layout,
+        val firstPageName: String?,
+    )
+
     /** Entrada já resolvida (nome UTF-8, CRC, tamanho, offset do local header). */
     private class Written(val nameBytes: ByteArray, val crc: Long, val size: Int, val offset: Long)
 
     /**
-     * Grava o OPZ em [outputPath]: as [pages] STORED seguidas do `manifest.json`. O manifesto
-     * é montado a partir dos nomes/dimensões das páginas + [detectedLayout]/[direction].
+     * Grava o OPZ em [outputPath]. As páginas são emitidas pelo [block] via [PageSink.page];
+     * o `manifest.json` é montado no fim (ordem/dims coletadas + layout detectado + [direction]).
+     * Retorna a contagem, o layout detectado (heurística sobre as dims amostradas) e a capa.
      */
     fun write(
         fileSystem: FileSystem,
         outputPath: Path,
-        pages: List<OpzPageInput>,
-        detectedLayout: Layout,
         direction: ReadingDirection,
-    ) {
-        val manifest = OpzManifest(
-            detectedLayout = detectedLayout.name,
-            direction = direction.name,
-            pages = pages.map { OpzPage(it.name, it.size?.width ?: 0, it.size?.height ?: 0) },
-        )
-        val manifestBytes = json.encodeToString(OpzManifest.serializer(), manifest).encodeToByteArray()
-
+        sampleSize: Int = 8,
+        block: (PageSink) -> Unit,
+    ): Result {
         outputPath.parent?.let { fileSystem.createDirectories(it) }
+        var detected = Layout.PAGED
+        var pageCount = 0
+        var firstName: String? = null
         fileSystem.write(outputPath) {
-            val written = ArrayList<Written>(pages.size + 1)
-            var offset = 0L
-            // Páginas primeiro, manifesto por último (ordem irrelevante para o ZIP).
-            for (page in pages) offset += writeEntry(page.name, page.bytes, offset, written)
-            offset += writeEntry(OpzManifest.ENTRY_NAME, manifestBytes, offset, written)
+            val sink = PageSink(this)
+            block(sink)
+            detected = LayoutHeuristic.detectFromSizes(sampleSizes(sink.sizes, sampleSize))
+            val manifest = OpzManifest(
+                detectedLayout = detected.name,
+                direction = direction.name,
+                pages = sink.pages,
+            )
+            val manifestBytes =
+                json.encodeToString(OpzManifest.serializer(), manifest).encodeToByteArray()
+            sink.writeRaw(OpzManifest.ENTRY_NAME, manifestBytes)
+            sink.finish()
+            pageCount = sink.pageCount
+            firstName = sink.pages.firstOrNull()?.name
+        }
+        return Result(pageCount, detected, firstName)
+    }
 
+    private fun sampleSizes(sizes: List<ImageSize>, sampleSize: Int): List<ImageSize> {
+        if (sizes.isEmpty()) return emptyList()
+        val step = maxOf(1, sizes.size / sampleSize)
+        return sizes.filterIndexed { i, _ -> i % step == 0 }.take(sampleSize)
+    }
+
+    /** Recebe páginas uma a uma e as grava STORED imediatamente (memória = 1 página). */
+    class PageSink internal constructor(private val out: BufferedSink) {
+        private val written = ArrayList<Written>()
+        internal val pages = ArrayList<OpzPage>()
+        internal val sizes = ArrayList<ImageSize>()
+        internal var pageCount = 0
+        private var offset = 0L
+
+        /** Emite uma página: decodifica dims (p/ manifesto e heurística), grava e descarta. */
+        fun page(name: String, bytes: ByteArray) {
+            val size = readImageSize(bytes)
+            pages += OpzPage(name, size?.width ?: 0, size?.height ?: 0)
+            if (size != null) sizes += size
+            writeRaw(name, bytes)
+            pageCount++
+        }
+
+        internal fun writeRaw(name: String, data: ByteArray) {
+            offset += out.writeEntry(name, data, offset, written)
+        }
+
+        internal fun finish() {
             val centralStart = offset
             var centralSize = 0L
-            for (e in written) centralSize += writeCentralHeader(e)
-            writeEocd(written.size, centralSize, centralStart)
+            for (e in written) centralSize += out.writeCentralHeader(e)
+            out.writeEocd(written.size, centralSize, centralStart)
         }
     }
 

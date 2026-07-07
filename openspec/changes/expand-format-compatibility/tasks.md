@@ -42,6 +42,12 @@
       > imagem**; havendo imagens é unidade. Corrige o caso real (One Piece v01.cbz) com `.cbz`
       > espúrio aninhado entre as pastas — erro de empacotamento, ignorado. Regressão coberta.
 - [x] 4.3 Normalização: origem → capítulos → escritor OPZ → `obras/{obra}/{capítulo}.opz`
+      > Escrita OPZ é **streaming** (pico = 1 página) e as páginas de origem são lidas sob
+      > demanda — sem bufferizar capítulo/volume. Corrige OOM no Android (heap ~192MB) ao
+      > importar volumes grandes (ex.: 284MB). Provado sob heap de 256MB contra o arquivo real.
+      > **Desvio consciente do D5** (extract-all → por-entrada no RAR): no JVM/Android o `junrar`
+      > extrai por entrada (sem custo de cinterop), mantendo o mesmo teto de memória do ZIP; o
+      > iOS (cinterop `unarr`, spike 1.1) segue recusando por ora.
 - [x] 4.4 Ampliar o filtro do FileKit para `cbz`, `cbr`, `zip`, `rar`
 - [x] 4.5 Heurística de layout por capítulo lida durante a normalização (reusar Marco 1)
 - [x] 4.6 UI de progresso do import (RAR + re-zip são mais lentos que o copy-in intacto)

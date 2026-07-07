@@ -11,12 +11,15 @@ import okio.openZip
  * nome. Abstrai ZIP (Okio `openZip`, sob demanda) e RAR (`RarArchive.extractAll`, não-lazy —
  * D5) atrás de um contrato único para o pipeline de import.
  */
-interface ArchiveReader {
+interface ArchiveReader : AutoCloseable {
     /** Nomes de todas as entradas-arquivo (caminho relativo, `/` como separador). */
     fun entryNames(): List<String>
 
     /** Bytes de uma entrada. */
     fun read(name: String): ByteArray
+
+    /** Libera recursos (o RAR mantém o arquivo aberto; ZIP é sem estado). */
+    override fun close() {}
 
     companion object {
         private val IMAGE_EXTENSIONS = setOf(
@@ -59,17 +62,18 @@ class ZipArchiveReader(private val path: String) : ArchiveReader {
 }
 
 /**
- * Leitor de contêiner RAR (CBR/RAR) via [RarArchive]. Extrai todas as entradas de uma vez
- * (modo não-lazy — D5) e serve os bytes de memória. RAR5 é recusado por [RarArchive].
+ * Leitor de contêiner RAR (CBR/RAR) via [RarArchive]: lista os nomes e extrai cada entrada
+ * **sob demanda** (mantém o arquivo aberto — precisa de [close]). RAR5 é recusado por
+ * [RarArchive]. Usar dentro de `use { }` para fechar o handle.
  */
 class RarArchiveReader(path: String) : ArchiveReader {
-    private val entries: Map<String, ByteArray> =
-        RarArchive.extractAll(path).associate { it.name to it.bytes }
+    private val archive = RarArchive(path)
 
-    override fun entryNames(): List<String> = entries.keys.toList()
+    override fun entryNames(): List<String> = archive.entryNames()
 
-    override fun read(name: String): ByteArray =
-        entries[name] ?: error("Entrada ausente no RAR: $name")
+    override fun read(name: String): ByteArray = archive.read(name)
+
+    override fun close() = archive.close()
 }
 
 /**

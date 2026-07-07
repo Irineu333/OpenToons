@@ -6,23 +6,25 @@ import okio.Path.Companion.toPath
 /** Lançada quando um formato/variante não é suportado neste marco (ex.: RAR5, RAR no iOS). */
 class UnsupportedFormatException(message: String) : Exception(message)
 
-/** Entrada extraída de um RAR: nome e bytes crus (modo não-lazy — design D5). */
-class RarEntry(val name: String, val bytes: ByteArray)
-
 /**
- * Descompactação RAR (design D4/D5, task 3.1). `expect object` com um único ponto de entrada
- * **não-lazy** (`extractAll`): como tudo vira OPZ no import, o RAR não precisa de leitura
- * aleatória por página — basta despejar as entradas uma vez e alimentar o escritor OPZ. Isso
- * minimiza a superfície nativa no iOS (sem seek por entrada) e mantém a leitura em regime
- * Okio-pura (só OPZ). O RAR vive **apenas no caminho de import**.
+ * Descompactação RAR (design D4/D5, task 3.1). Handle **por-entrada** sobre um `.cbr`/`.rar`:
+ * lista os nomes (metadados, sem dados) e lê os bytes de uma entrada sob demanda. O import
+ * escreve o OPZ em streaming (pico = 1 página), então o RAR **não** é despejado inteiro na
+ * memória — volumes grandes (ex. ~284 MB) estouravam o heap do Android com o modo extract-all.
+ * A leitura em regime segue Okio-pura (só OPZ); o RAR vive **apenas no caminho de import**.
  *
- *  - `actual` JVM/Android → `junrar` (RAR4, Java puro).
+ *  - `actual` JVM/Android → `junrar` (RAR4, Java puro; extração por entrada, não-solid).
  *  - `actual` iOS/Native → cinterop `unarr` (spike 1.1); enquanto o spike não fecha, recusa
  *    RAR com mensagem clara (fallback documentado D5 — degradação isolada por plataforma).
  */
-expect object RarArchive {
-    /** Extrai todas as entradas-arquivo do RAR em [path]. RAR4 apenas; RAR5 é recusado. */
-    fun extractAll(path: String): List<RarEntry>
+expect class RarArchive(path: String) : AutoCloseable {
+    /** Nomes das entradas-arquivo (sem diretórios), `/` como separador. RAR5 é recusado. */
+    fun entryNames(): List<String>
+
+    /** Bytes de uma entrada, extraídos sob demanda. */
+    fun read(name: String): ByteArray
+
+    override fun close()
 }
 
 /**

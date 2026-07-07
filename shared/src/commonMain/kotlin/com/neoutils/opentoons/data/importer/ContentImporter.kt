@@ -5,20 +5,15 @@ import com.neoutils.opentoons.data.db.WorkEntity
 import com.neoutils.opentoons.data.db.toDomain
 import com.neoutils.opentoons.data.local.ArchiveReader
 import com.neoutils.opentoons.data.local.ContainerFormats
-import com.neoutils.opentoons.data.local.opz.OpzPageInput
 import com.neoutils.opentoons.data.local.opz.OpzWriter
 import com.neoutils.opentoons.data.local.rar.UnsupportedFormatException
 import com.neoutils.opentoons.data.repository.LibraryRepository
 import com.neoutils.opentoons.data.source.LocalImportSource
-import com.neoutils.opentoons.domain.model.Layout
 import com.neoutils.opentoons.domain.model.ReadingDirection
 import com.neoutils.opentoons.domain.model.Work
-import com.neoutils.opentoons.util.ImageSize
-import com.neoutils.opentoons.util.LayoutHeuristic
 import com.neoutils.opentoons.util.NaturalOrder
 import com.neoutils.opentoons.util.ioDispatcher
 import com.neoutils.opentoons.util.nowMillis
-import com.neoutils.opentoons.util.readImageSize
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.copyTo
@@ -34,24 +29,24 @@ import kotlin.uuid.Uuid
 
 /**
  * Import unificado (spec content-import; tasks 4.1–4.5, 5.1). **Normaliza qualquer formato de
- * origem para OPZ por capítulo** (D1): decodifica CBZ/CBR/ZIP/RAR, materializa um `.opz`
- * STORED por capítulo em `obras/{obra}/{capítulo}.opz` (D2) e persiste as linhas.
+ * origem para OPZ por capítulo** (D1): decodifica CBZ/CBR/ZIP/RAR e materializa um `.opz`
+ * STORED por capítulo em `obras/{obra}/{capítulo}.opz` (D2).
  *
  * Grade 2×2 (D3): `cbz`/`cbr` são **unidade** (imagens → capítulos por pasta); `zip`/`rar`
- * são **pacote** (arquivos `.cbz`/`.cbr` internos, cada um um capítulo). A desambiguação é por
- * conteúdo: se as entradas de topo forem arquivos-arquivo, é pacote; se forem imagens, unidade.
+ * são **pacote** (arquivos `.cbz`/`.cbr` internos, cada um um capítulo). Desambiguação por
+ * presença de imagem (ver [ArchiveReader.isPackage]).
  *
- * RAR vive só aqui (extract-all, D5); a leitura em regime é Okio-pura sobre OPZ.
+ * **Memória:** a escrita OPZ é streaming (pico = 1 página) e as páginas são lidas do container
+ * de origem **sob demanda** — nunca se mantém um capítulo (menos ainda o volume) inteiro em
+ * memória. RAR vive só aqui (leitura por entrada, D5); a leitura em regime é Okio-pura sobre OPZ.
  */
 @OptIn(ExperimentalUuidApi::class)
 class ContentImporter(
     private val repository: LibraryRepository,
-    private val sampleSize: Int = 8,
 ) {
 
-    /** Origem já normalizada em memória: capítulo com suas páginas (nome plano + bytes). */
-    private class SourceChapter(val title: String, val pages: List<SourcePage>)
-    private class SourcePage(val name: String, val bytes: ByteArray)
+    /** Página planejada: nome plano no OPZ + leitura sob demanda dos bytes de origem. */
+    private class PlannedPage(val opzName: String, val read: () -> ByteArray)
 
     private val storageRoot: Path get() = FileKit.filesDir.path.toPath()
 
@@ -62,52 +57,67 @@ class ContentImporter(
     ): Work = withContext(ioDispatcher) {
         val workUuid = Uuid.random().toString()
         val title = picked.name.substringBeforeLast('.').ifBlank { "Sem título" }
+        val obraDir = storageRoot / "obras" / workUuid
+        FileSystem.SYSTEM.createDirectories(obraDir)
 
         onProgress("Lendo arquivo…")
-        val chapters = withTempSource(picked) { normalize(it, allowPackage = true) }
-        require(chapters.isNotEmpty()) { "Nenhuma imagem encontrada no arquivo." }
+        val results = withTempSource(picked) { sourcePath ->
+            ContainerFormats.open(sourcePath).use { reader ->
+                buildChapters(reader, allowPackage = true, workUuid, obraDir, baseOrder = 0, onProgress)
+            }
+        }
+        require(results.isNotEmpty()) { "Nenhuma imagem encontrada no arquivo." }
 
-        val entities = writeChaptersOpz(workUuid, chapters, baseOrder = 0, onProgress)
-        val coverPage = chapters.first().pages.firstOrNull()?.name
-
+        val cover = results.firstOrNull { it.second != null }
         val work = WorkEntity(
             uuid = workUuid,
             publisherKey = null, // sem publicador atribuível (ADR-0009)
             title = title,
-            coverArchivePath = coverPage?.let { entities.first().archivePath },
-            coverEntryName = coverPage,
+            coverArchivePath = cover?.first?.archivePath,
+            coverEntryName = cover?.second,
             direction = ReadingDirection.LTR.name,
             layoutOverride = null,
             favorite = false,
             createdAt = nowMillis(),
         )
-        repository.addWork(work, entities)
+        repository.addWork(work, results.map { it.first })
         work.toDomain()
     }
 
     /**
      * Adiciona capítulos a uma **obra existente** a partir de arquivos-**unidade** (CBZ/CBR).
-     * Pacotes (ZIP/RAR) são recusados (spec content-import). Retorna quantos capítulos entraram.
+     * Pacotes (ZIP/RAR) são recusados. Retorna quantos capítulos entraram.
      */
     suspend fun addChapters(
         workUuid: String,
         picked: PlatformFile,
         onProgress: (String) -> Unit = {},
     ): Int = withContext(ioDispatcher) {
-        onProgress("Lendo arquivo…")
-        val chapters = withTempSource(picked) { normalize(it, allowPackage = false) }
-        require(chapters.isNotEmpty()) { "Nenhuma imagem encontrada no arquivo." }
-
+        val obraDir = storageRoot / "obras" / workUuid
+        FileSystem.SYSTEM.createDirectories(obraDir)
         val base = repository.nextOrderIndex(workUuid)
-        val entities = writeChaptersOpz(workUuid, chapters, baseOrder = base, onProgress)
-        entities.forEach { repository.addChapter(it) }
-        entities.size
+
+        onProgress("Lendo arquivo…")
+        val results = withTempSource(picked) { sourcePath ->
+            ContainerFormats.open(sourcePath).use { reader ->
+                buildChapters(reader, allowPackage = false, workUuid, obraDir, base, onProgress)
+            }
+        }
+        require(results.isNotEmpty()) { "Nenhuma imagem encontrada no arquivo." }
+        results.forEach { repository.addChapter(it.first) }
+        results.size
     }
 
-    // --- Normalização (origem → capítulos em memória) ---
+    // --- Construção dos capítulos (streaming: origem → OPZ, capítulo a capítulo) ---
 
-    private fun normalize(sourcePath: String, allowPackage: Boolean): List<SourceChapter> {
-        val reader = ContainerFormats.open(sourcePath)
+    private fun buildChapters(
+        reader: ArchiveReader,
+        allowPackage: Boolean,
+        workUuid: String,
+        obraDir: Path,
+        baseOrder: Int,
+        onProgress: (String) -> Unit,
+    ): List<Pair<ChapterEntity, String?>> {
         val entries = reader.entryNames()
         return if (ArchiveReader.isPackage(entries)) {
             if (!allowPackage) {
@@ -116,85 +126,96 @@ class ContentImporter(
                         "Importe um arquivo CBZ/CBR (unidade).",
                 )
             }
-            packageChapters(reader, entries)
+            packageChapters(reader, entries, workUuid, obraDir, baseOrder, onProgress)
         } else {
-            unitChapters(reader, entries)
+            unitChapters(reader, entries, workUuid, obraDir, baseOrder, onProgress)
         }
     }
 
     /** Unidade: imagens agrupadas por pasta — cada pasta um capítulo (raiz = um capítulo só). */
-    private fun unitChapters(reader: ArchiveReader, entries: List<String>): List<SourceChapter> {
+    private fun unitChapters(
+        reader: ArchiveReader,
+        entries: List<String>,
+        workUuid: String,
+        obraDir: Path,
+        baseOrder: Int,
+        onProgress: (String) -> Unit,
+    ): List<Pair<ChapterEntity, String?>> {
         val images = entries.filter { ArchiveReader.isImage(it) }.sortedWith(NaturalOrder)
         if (images.isEmpty()) return emptyList()
         val grouped = images
             .groupBy { it.substringBeforeLast('/', "") }
             .map { (dir, es) -> dir to es.sortedWith(NaturalOrder) }
             .sortedWith { a, b -> NaturalOrder.compare(a.first, b.first) }
-        return grouped.mapIndexed { index, (dir, es) ->
-            SourceChapter(
-                title = chapterTitle(dir, index, grouped.size),
-                pages = es.map { SourcePage(basename(it), reader.read(it)) },
-            )
+
+        return grouped.mapIndexedNotNull { index, (dir, names) ->
+            onProgress("Convertendo capítulo ${index + 1}/${grouped.size}…")
+            val pages = names.map { name -> PlannedPage(basename(name)) { reader.read(name) } }
+            writeChapterOpz(obraDir, workUuid, chapterTitle(dir, index, grouped.size), baseOrder + index, pages)
         }
     }
 
     /** Pacote: cada arquivo interno (`.cbz`/`.cbr`) vira um capítulo (imagens achatadas). */
-    private fun packageChapters(reader: ArchiveReader, entries: List<String>): List<SourceChapter> {
-        val inner = entries.filter { ArchiveReader.isArchive(it) }.sortedWith(NaturalOrder)
-        return inner.mapNotNull { innerName ->
-            val bytes = reader.read(innerName)
-            val ext = innerName.substringAfterLast('.', "cbz")
-            val pages = withTempBytes(bytes, ext) { innerPath ->
-                val innerReader = ContainerFormats.open(innerPath)
-                innerReader.entryNames()
-                    .filter { ArchiveReader.isImage(it) }
-                    .sortedWith(NaturalOrder)
-                    .map { SourcePage(basename(it), innerReader.read(it)) }
-            }
-            if (pages.isEmpty()) null
-            else SourceChapter(basename(innerName).substringBeforeLast('.'), pages)
-        }
-    }
-
-    // --- Escrita OPZ + entidades ---
-
-    private fun writeChaptersOpz(
+    private fun packageChapters(
+        reader: ArchiveReader,
+        entries: List<String>,
         workUuid: String,
-        chapters: List<SourceChapter>,
+        obraDir: Path,
         baseOrder: Int,
         onProgress: (String) -> Unit,
-    ): List<ChapterEntity> {
-        val obraDir = storageRoot / "obras" / workUuid
-        FileSystem.SYSTEM.createDirectories(obraDir)
-        return chapters.mapIndexed { index, chapter ->
-            onProgress("Convertendo capítulo ${index + 1}/${chapters.size}…")
-            val chapterId = Uuid.random().toString()
-            val opzPath = obraDir / "$chapterId.opz"
-            val inputs = chapter.pages.map {
-                OpzPageInput(it.name, it.bytes, readImageSize(it.bytes))
+    ): List<Pair<ChapterEntity, String?>> {
+        val inner = entries.filter { ArchiveReader.isArchive(it) }.sortedWith(NaturalOrder)
+        val out = ArrayList<Pair<ChapterEntity, String?>>(inner.size)
+        inner.forEachIndexed { index, innerName ->
+            onProgress("Convertendo capítulo ${index + 1}/${inner.size}…")
+            val bytes = reader.read(innerName)
+            val ext = innerName.substringAfterLast('.', "cbz")
+            val written = withTempBytes(bytes, ext) { innerPath ->
+                ContainerFormats.open(innerPath).use { innerReader ->
+                    val images = innerReader.entryNames()
+                        .filter { ArchiveReader.isImage(it) }
+                        .sortedWith(NaturalOrder)
+                    if (images.isEmpty()) return@use null
+                    val pages = images.map { name -> PlannedPage(basename(name)) { innerReader.read(name) } }
+                    val title = basename(innerName).substringBeforeLast('.')
+                    writeChapterOpz(obraDir, workUuid, title, baseOrder + out.size, pages)
+                }
             }
-            val detected = LayoutHeuristic.detectFromSizes(sampledSizes(inputs))
-            OpzWriter.write(FileSystem.SYSTEM, opzPath, inputs, detected, ReadingDirection.LTR)
-            ChapterEntity(
-                id = chapterId,
-                workUuid = workUuid,
-                title = chapter.title,
-                archivePath = opzPath.toString(),
-                orderIndex = baseOrder + index,
-                pageCount = chapter.pages.size,
-                sourceKey = LocalImportSource.KEY,
-                detectedLayout = detected.name,
-                layoutOverride = null,
-            )
+            written?.let { out += it }
         }
+        return out
     }
 
-    /** Amostra até [sampleSize] dimensões (já calculadas) espaçadas para a heurística de layout. */
-    private fun sampledSizes(inputs: List<OpzPageInput>): List<ImageSize> {
-        val sizes = inputs.mapNotNull { it.size }
-        if (sizes.isEmpty()) return emptyList()
-        val step = maxOf(1, sizes.size / sampleSize)
-        return sizes.filterIndexed { i, _ -> i % step == 0 }.take(sampleSize)
+    /** Escreve um capítulo como OPZ (streaming) e devolve a entidade + a 1ª página (capa). */
+    private fun writeChapterOpz(
+        obraDir: Path,
+        workUuid: String,
+        title: String,
+        orderIndex: Int,
+        pages: List<PlannedPage>,
+    ): Pair<ChapterEntity, String?>? {
+        if (pages.isEmpty()) return null
+        val chapterId = Uuid.random().toString()
+        val opzPath = obraDir / "$chapterId.opz"
+        val result = OpzWriter.write(FileSystem.SYSTEM, opzPath, ReadingDirection.LTR) { sink ->
+            pages.forEach { sink.page(it.opzName, it.read()) }
+        }
+        if (result.pageCount == 0) {
+            runCatching { FileSystem.SYSTEM.delete(opzPath, mustExist = false) }
+            return null
+        }
+        val entity = ChapterEntity(
+            id = chapterId,
+            workUuid = workUuid,
+            title = title,
+            archivePath = opzPath.toString(),
+            orderIndex = orderIndex,
+            pageCount = result.pageCount,
+            sourceKey = LocalImportSource.KEY,
+            detectedLayout = result.detectedLayout.name,
+            layoutOverride = null,
+        )
+        return entity to result.firstPageName
     }
 
     private fun chapterTitle(dir: String, index: Int, total: Int): String {
