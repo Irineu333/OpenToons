@@ -10,17 +10,19 @@ import androidx.room.PrimaryKey
  * `(chave_publicador, uuid)` mas fica **nulo** no Marco 1 — sem publicador atribuível e
  * sem evento de leitura (ADR-0009, task 4.4).
  *
- * Campos de layout/direção (task 4.2): `direction` é da obra (RTL/LTR, só paginado);
- * `layoutOverride` é o override no nível da obra (a detecção mora no capítulo).
+ * Split estado × dado (D6): o banco é **índice reconstruível**, não dono. Dado (título,
+ * `direction` detectada, capa) vem do `work.json`; estado (favorito, `directionOverride`,
+ * `layoutOverride`, `createdAt` do import) é do banco. `coverPath` aponta a `cover.webp`
+ * derivada (cache) — conveniência da grade, também reconstruível do disco.
  */
 @Entity(tableName = "works")
 data class WorkEntity(
     @PrimaryKey val uuid: String,
     val publisherKey: String?,
     val title: String,
-    val coverArchivePath: String?,
-    val coverEntryName: String?,
+    val coverPath: String?,
     val direction: String,
+    val directionOverride: String?,
     val layoutOverride: String?,
     val favorite: Boolean,
     val createdAt: Long,

@@ -81,10 +81,11 @@ Duas coisas distintas:
   páginas (é chrome de UI). Por isso gerar essa thumbnail **não** contradiz o corte de
   compressão: nenhuma **página** é transcodificada.
 
-**(Re)geração:** no import da obra **e a cada capítulo adicionado** (`addChapters`). A página
-de capa é a 1ª página na ordem; como `addChapters` **anexa** (ordem maior), a capa costuma ser
-estável, mas regenerar é barato (uma imagem) e garante `work.json` + `cover.webp` sempre
-coerentes. O encoder de imagem é `expect/actual` por plataforma, **restrito à capa**.
+**Geração:** **uma vez, no import da obra**. A página de capa é a 1ª página na ordem; como
+`addChapters` **anexa** (ordem maior), o 1º capítulo — origem da capa — não muda, então
+regenerar daria a mesma imagem. Adicionar capítulos **não** regenera a capa; a remoção também
+não (a `cover.webp` é cache derivado — permanece válida, e `deleteWork` apaga a pasta inteira
+quando a obra sai). O encoder de imagem é `expect/actual` por plataforma, **restrito à capa**.
 
 ### D6 — Split estado × dado e reconstrução a partir do disco
 | Dado (disco = verdade) | Estado (banco) |

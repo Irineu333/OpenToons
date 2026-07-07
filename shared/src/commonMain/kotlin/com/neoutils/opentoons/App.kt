@@ -12,6 +12,8 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import com.neoutils.opentoons.data.image.ArchiveImageFetcher
 import com.neoutils.opentoons.data.image.ArchiveImageKeyer
+import com.neoutils.opentoons.data.image.CoverImageFetcher
+import com.neoutils.opentoons.data.image.CoverImageKeyer
 import com.neoutils.opentoons.di.AppGraph
 import com.neoutils.opentoons.ui.detail.DetailScreen
 import com.neoutils.opentoons.ui.detail.DetailViewModel
@@ -34,6 +36,9 @@ fun App(graph: AppGraph) {
             .components {
                 add(ArchiveImageFetcher.Factory())
                 add(ArchiveImageKeyer())
+                // Capa de obra (cover.webp) — grade/detalhe leem o arquivo derivado, não o .opz.
+                add(CoverImageFetcher.Factory())
+                add(CoverImageKeyer())
             }
             .build()
     }

@@ -21,6 +21,11 @@ class LibraryViewModel(private val graph: AppGraph) : ViewModel() {
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     init {
+        // Reconstrói o índice a partir do disco (D6): banco é índice reconstruível, o disco é a
+        // fonte de verdade. Repovoa a biblioteca se o schema foi recriado (destrutivo, D8).
+        viewModelScope.launch {
+            runCatching { graph.rescanLibrary() }
+        }
         graph.library.observeLibrary()
             .map { works ->
                 if (works.isEmpty()) LibraryUiState.Empty else LibraryUiState.Content(works)

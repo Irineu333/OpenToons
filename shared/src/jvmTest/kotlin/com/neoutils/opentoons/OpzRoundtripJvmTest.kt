@@ -3,7 +3,6 @@ package com.neoutils.opentoons
 import com.neoutils.opentoons.data.local.CbzArchive
 import com.neoutils.opentoons.data.local.opz.OpzReader
 import com.neoutils.opentoons.data.local.opz.OpzWriter
-import com.neoutils.opentoons.domain.model.ReadingDirection
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import java.io.File
@@ -24,12 +23,16 @@ class OpzRoundtripJvmTest {
         "002.jpg" to "conteudo-maior-da-pagina-2",
     )
 
+    private val chapterId = "chapter-uuid-1"
+    private val obraId = "obra-uuid-1"
+
     private fun writeOpz(): String {
         val file = File.createTempFile("opentoons-opz", ".opz").apply { deleteOnExit() }
         val result = OpzWriter.write(
             fileSystem = FileSystem.SYSTEM,
             outputPath = file.absolutePath.toPath(),
-            direction = ReadingDirection.LTR,
+            chapterId = chapterId,
+            obraId = obraId,
         ) { sink ->
             pages.forEach { (name, content) -> sink.page(name, content.encodeToByteArray()) }
         }
@@ -48,14 +51,16 @@ class OpzRoundtripJvmTest {
     }
 
     @Test
-    fun manifesto_carregaOrdemLayoutEPaginas() {
+    fun manifesto_carregaChapterIdOrdemEPaginas_semDirection() {
         val path = writeOpz()
         val manifest = OpzReader.manifest(path)
         assertNotNull(manifest)
-        assertEquals(ReadingDirection.LTR.name, manifest.direction)
+        // `direction` subiu para a obra (work.json) — o manifesto do capítulo carrega o
+        // `chapterId` interno (D3/D4) e mantém o `detectedLayout`.
+        assertEquals(chapterId, manifest.chapterId)
+        assertEquals(obraId, manifest.obraId)
         assertEquals(listOf("001.jpg", "002.jpg"), manifest.pages.map { it.name })
-        // campos ADR-0003 previstos e nulos neste marco
-        assertEquals(null, manifest.obraId)
+        // campo assinado do ADR-0003 previsto e nulo neste marco
         assertEquals(null, manifest.chavePublicador)
     }
 

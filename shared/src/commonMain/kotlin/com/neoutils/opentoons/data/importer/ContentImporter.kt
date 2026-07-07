@@ -7,6 +7,10 @@ import com.neoutils.opentoons.data.local.ArchiveReader
 import com.neoutils.opentoons.data.local.ContainerFormats
 import com.neoutils.opentoons.data.local.opz.OpzWriter
 import com.neoutils.opentoons.data.local.rar.UnsupportedFormatException
+import com.neoutils.opentoons.data.local.work.CoverStore
+import com.neoutils.opentoons.data.local.work.WorkCover
+import com.neoutils.opentoons.data.local.work.WorkManifest
+import com.neoutils.opentoons.data.local.work.WorkManifestStore
 import com.neoutils.opentoons.data.repository.LibraryRepository
 import com.neoutils.opentoons.data.source.LocalImportSource
 import com.neoutils.opentoons.domain.model.ReadingDirection
@@ -68,14 +72,32 @@ class ContentImporter(
         }
         require(results.isNotEmpty()) { "Nenhuma imagem encontrada no arquivo." }
 
-        val cover = results.firstOrNull { it.second != null }
+        // Direção **detectada** (dado). Heurística de direção fica para o futuro — LTR é o
+        // default; o override do usuário vive no banco (D4/D6).
+        val direction = ReadingDirection.LTR
+        // Capa = 1ª página do 1º capítulo na ordem (D5); `results` já está em ordem.
+        val coverChapter = results.firstOrNull { it.second != null }
+        val cover = coverChapter?.let { (entity, page) -> WorkCover(entity.id, page!!) }
+
+        // `work.json` **antes** do banco (D6): evita órfãos e é a fonte de verdade do dado.
+        onProgress("Gravando manifesto…")
+        WorkManifestStore.write(
+            FileSystem.SYSTEM,
+            obraDir,
+            WorkManifest(obraId = workUuid, title = title, direction = direction.name, cover = cover),
+        )
+        // `cover.webp` derivada (cache regenerável, D5) — nenhuma página é transcodificada.
+        val coverPath = coverChapter?.let { (entity, page) ->
+            CoverStore.generate(FileSystem.SYSTEM, obraDir, entity.archivePath.toPath(), page!!)
+        }?.toString()
+
         val work = WorkEntity(
             uuid = workUuid,
             publisherKey = null, // sem publicador atribuível (ADR-0009)
             title = title,
-            coverArchivePath = cover?.first?.archivePath,
-            coverEntryName = cover?.second,
-            direction = ReadingDirection.LTR.name,
+            coverPath = coverPath,
+            direction = direction.name,
+            directionOverride = null,
             layoutOverride = null,
             favorite = false,
             createdAt = nowMillis(),
@@ -105,6 +127,8 @@ class ContentImporter(
         }
         require(results.isNotEmpty()) { "Nenhuma imagem encontrada no arquivo." }
         results.forEach { repository.addChapter(it.first) }
+        // A capa é gerada **uma vez, no import** (D5): capítulos adicionados são anexados e não
+        // trocam a capa da obra. Nada a (re)gerar aqui.
         results.size
     }
 
@@ -195,9 +219,11 @@ class ContentImporter(
         pages: List<PlannedPage>,
     ): Pair<ChapterEntity, String?>? {
         if (pages.isEmpty()) return null
+        // Nome do `.opz` = **título** do capítulo (sanitizado); a ordem sai do natural sort dos
+        // nomes (D3). O `chapterId` interno é a chave estável de estado (sobrevive a rename).
         val chapterId = Uuid.random().toString()
-        val opzPath = obraDir / "$chapterId.opz"
-        val result = OpzWriter.write(FileSystem.SYSTEM, opzPath, ReadingDirection.LTR) { sink ->
+        val opzPath = obraDir / uniqueOpzName(obraDir, title)
+        val result = OpzWriter.write(FileSystem.SYSTEM, opzPath, chapterId = chapterId, obraId = workUuid) { sink ->
             pages.forEach { sink.page(it.opzName, it.read()) }
         }
         if (result.pageCount == 0) {
@@ -228,6 +254,29 @@ class ContentImporter(
     }
 
     private fun basename(name: String): String = name.substringAfterLast('/')
+
+    /**
+     * Nome de arquivo único para o `.opz` do capítulo: título sanitizado + `.opz`, com sufixo
+     * ` (n)` se já existir na pasta (dois capítulos de mesmo título, ou adição sobre existente).
+     * O título continua vivo no nome; o `chapterId` interno é quem identifica o capítulo.
+     */
+    private fun uniqueOpzName(obraDir: Path, title: String): String {
+        val base = sanitizeFileName(title).ifBlank { "Capítulo" }
+        var candidate = "$base.opz"
+        var n = 2
+        while (FileSystem.SYSTEM.exists(obraDir / candidate)) {
+            candidate = "$base ($n).opz"
+            n++
+        }
+        return candidate
+    }
+
+    /** Neutraliza caracteres inválidos em nome de arquivo (cross-plataforma) e trim de bordas. */
+    private fun sanitizeFileName(name: String): String =
+        name.map { c -> if (c in "/\\:*?\"<>|" || c.isISOControl()) '_' else c }
+            .joinToString("")
+            .trim()
+            .trim('.')
 
     // --- Arquivos temporários (o picker pode ser uma URI; RAR/ZIP precisam de um path real) ---
 

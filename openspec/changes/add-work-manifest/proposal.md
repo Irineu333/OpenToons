@@ -22,9 +22,9 @@ obra (`work.json`) e uma capa de obra (`cover.webp`), com um **split explícito 
   `obra.meta` (ADR-0003) — `version`, `obraId`, `chavePublicador` (reservado, nulo),
   `title`, `direction` **detectada**, `cover` (`{chapterId, entryName}`). É a **fonte de
   verdade** dos dados da obra.
-- **Capa de obra (`cover.webp`)**: thumbnail **derivada** (cache regenerável) gerada da
-  página de capa. Resolve a grade — a lista lê um arquivo pequeno em vez de destrinchar um
-  `.opz` por célula. **(Re)gerada no import e a cada capítulo adicionado.**
+- **Capa de obra (`cover.webp`)**: thumbnail **derivada** (cache) gerada da página de capa.
+  Resolve a grade — a lista lê um arquivo pequeno em vez de destrinchar um `.opz` por célula.
+  **Gerada uma vez, no import** (capítulos adicionados são anexados e não trocam a capa).
 - **`chapterId` interno**: o `manifest.json` do capítulo passa a carregar um `chapterId`
   (uuid) estável. O **nome do `.opz` vira o título/ordem** do capítulo (cosmético); o id
   interno é a **chave de estado** (progresso sobrevive a rename).
@@ -41,8 +41,8 @@ obra (`work.json`) e uma capa de obra (`cover.webp`), com um **split explícito 
 ### Modified Capabilities
 
 - `content-import`: o import passa a **escrever `work.json` + `cover.webp`** e a gravar o
-  `chapterId` no manifesto do capítulo; `direction` sai do manifesto do capítulo. Adicionar
-  capítulos **regenera a capa** e atualiza o `work.json`.
+  `chapterId` no manifesto do capítulo; `direction` sai do manifesto do capítulo. A capa é
+  gerada **uma vez, no import** (adicionar capítulos não a regenera).
 - `offline-library`: a grade usa a **capa de obra** (`cover.webp`); adiciona **reconstrução
   da biblioteca a partir do disco** com preservação do estado pessoal.
 

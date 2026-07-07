@@ -1,22 +1,27 @@
 package com.neoutils.opentoons.domain.model
 
 /**
- * Obra da biblioteca. A capa é endereçada por (arquivo do capítulo, entrada) e carregada
- * sob demanda pelo Coil a partir do `openZip` — não extraímos a imagem no import (D4/D5).
+ * Obra da biblioteca. A capa exibida vem da **thumbnail de obra** (`cover.webp`, D5): a grade
+ * lê um arquivo pequeno em vez de destrinchar um `.opz` de capítulo por célula. `direction` é
+ * a direção **detectada** (dado, do `work.json`); `directionOverride` é a preferência do
+ * usuário (estado, do banco) — a efetiva é o override, senão a detectada.
  */
 data class Work(
     val id: WorkId,
     val title: String,
-    val coverArchivePath: String?,
-    val coverEntryName: String?,
+    val coverPath: String?,
     val direction: ReadingDirection = ReadingDirection.LTR,
+    val directionOverride: ReadingDirection? = null,
     val layoutOverride: Layout? = null,
     val favorite: Boolean = false,
 ) {
-    /** Chave do Coil para a capa (ver [ArchiveImage]). */
-    val cover: ArchiveImage?
-        get() = if (coverArchivePath != null && coverEntryName != null)
-            ArchiveImage(coverArchivePath, coverEntryName) else null
+    /** Chave do Coil para a `cover.webp` da obra (ver [CoverImage]). */
+    val cover: CoverImage?
+        get() = coverPath?.let { CoverImage(it) }
+
+    /** Direção efetiva de leitura: override do usuário (estado) tem precedência sobre a detectada. */
+    val effectiveDirection: ReadingDirection
+        get() = directionOverride ?: direction
 }
 
 /**
@@ -61,4 +66,12 @@ data class ChapterProgress(
 data class ArchiveImage(
     val archivePath: String,
     val entryName: String,
+)
+
+/**
+ * Referência à **capa de obra** (`cover.webp`) em disco, usada como chave de load do Coil
+ * (grade/detalhe). É um arquivo pequeno derivado — carregar não abre nenhum `.opz` (D5).
+ */
+data class CoverImage(
+    val path: String,
 )

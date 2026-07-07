@@ -27,11 +27,10 @@ interface WorkDao {
     @Query("UPDATE works SET layoutOverride = :layout WHERE uuid = :uuid")
     suspend fun setLayoutOverride(uuid: String, layout: String?)
 
-    @Query("UPDATE works SET direction = :direction WHERE uuid = :uuid")
-    suspend fun setDirection(uuid: String, direction: String)
-
-    @Query("UPDATE works SET coverArchivePath = :archivePath, coverEntryName = :entryName WHERE uuid = :uuid")
-    suspend fun setCover(uuid: String, archivePath: String?, entryName: String?)
+    // Override de direção é **estado** (preferência do usuário) — não altera a `direction`
+    // detectada (dado do work.json). D6.
+    @Query("UPDATE works SET directionOverride = :direction WHERE uuid = :uuid")
+    suspend fun setDirectionOverride(uuid: String, direction: String?)
 
     @Query("DELETE FROM works WHERE uuid = :uuid")
     suspend fun delete(uuid: String)

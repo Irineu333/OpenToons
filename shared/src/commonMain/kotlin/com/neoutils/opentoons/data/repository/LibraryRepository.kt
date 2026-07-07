@@ -8,18 +8,24 @@ import com.neoutils.opentoons.data.db.WorkDao
 import com.neoutils.opentoons.data.db.WorkEntity
 import com.neoutils.opentoons.data.db.toDomain
 import com.neoutils.opentoons.data.local.opz.OpzReader
+import com.neoutils.opentoons.data.local.work.CoverStore
+import com.neoutils.opentoons.data.local.work.WorkManifestStore
+import com.neoutils.opentoons.data.source.LocalImportSource
 import com.neoutils.opentoons.domain.model.Chapter
 import com.neoutils.opentoons.domain.model.ChapterProgress
 import com.neoutils.opentoons.domain.model.Layout
 import com.neoutils.opentoons.domain.model.ReadingDirection
 import com.neoutils.opentoons.domain.model.Work
+import com.neoutils.opentoons.util.NaturalOrder
 import com.neoutils.opentoons.util.ioDispatcher
+import com.neoutils.opentoons.util.nowMillis
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
 
 /**
@@ -82,7 +88,7 @@ class LibraryRepository(
         workDao.setLayoutOverride(uuid, layout?.name)
 
     suspend fun setWorkDirection(uuid: String, direction: ReadingDirection) =
-        workDao.setDirection(uuid, direction.name)
+        workDao.setDirectionOverride(uuid, direction.name)
 
     suspend fun setChapterLayoutOverride(chapterId: String, layout: Layout?) =
         chapterDao.setLayoutOverride(chapterId, layout?.name)
@@ -130,17 +136,9 @@ class LibraryRepository(
                     chapterDao.setOrderIndex(chapter.id, index)
                 }
             }
-
-            // Capa órfã (task 5.4): se a capa apontava um `.opz` removido, re-aponta para o
-            // primeiro capítulo restante (1ª página); sem capítulos, limpa a capa.
-            val work = workDao.find(workUuid)
-            val coverAlive = work?.coverArchivePath != null &&
-                remaining.any { it.archivePath == work.coverArchivePath }
-            if (work != null && !coverAlive) {
-                val first = remaining.firstOrNull()
-                val firstPage = first?.let { OpzReader.pageNames(it.archivePath).firstOrNull() }
-                workDao.setCover(workUuid, first?.archivePath?.takeIf { firstPage != null }, firstPage)
-            }
+            // A capa **não** é regenerada na remoção (D5: gerada uma vez, no import). A
+            // `cover.webp` é cache derivado — permanece válida; se a obra ficar vazia, o
+            // chamador remove a obra (deleteWork apaga a pasta inteira, capa incluída).
             remaining.size
         }
 
@@ -155,4 +153,67 @@ class LibraryRepository(
     }
 
     suspend fun addChapter(chapter: ChapterEntity) = chapterDao.upsert(chapter)
+
+    /**
+     * Reconstrói a biblioteca a partir do disco (D6, tasks 5.1–5.3): varre `obras/{id}/work.json`
+     * e recria `WorkEntity`/`ChapterEntity` a partir dele e dos `.opz`. O **disco vence** —
+     * `work.json` é a fonte de verdade do dado (título, direction detectada, capa). O **estado
+     * pessoal** (favorito, `directionOverride`, `layoutOverride`, progresso/lido) é **preservado**
+     * casando por `obraId` (obra) e `chapterId` (capítulo, no `manifest.json` do `.opz`).
+     *
+     * A ordem dos capítulos é o *natural sort* dos nomes dos `.opz` (mesma regra do import). O
+     * progresso não é tocado (é casado por `chapterId`, que os `.opz` preservam).
+     */
+    suspend fun rescanFromDisk(obrasRoot: Path) = withContext(ioDispatcher) {
+        val fs = FileSystem.SYSTEM
+        if (fs.metadataOrNull(obrasRoot)?.isDirectory != true) return@withContext
+
+        for (obraDir in fs.list(obrasRoot)) {
+            if (fs.metadataOrNull(obraDir)?.isDirectory != true) continue
+            val manifest = WorkManifestStore.read(fs, obraDir) ?: continue // sem work.json → não é obra
+            val obraId = manifest.obraId
+
+            // Estado pessoal preexistente (disco vence no dado; estado é preservado).
+            val prior = workDao.find(obraId)
+            val coverPath = CoverStore.pathIn(obraDir).takeIf { fs.exists(it) }?.toString()
+            workDao.upsert(
+                WorkEntity(
+                    uuid = obraId,
+                    publisherKey = manifest.chavePublicador,
+                    title = manifest.title,
+                    coverPath = coverPath,
+                    direction = manifest.direction,
+                    directionOverride = prior?.directionOverride,
+                    layoutOverride = prior?.layoutOverride,
+                    favorite = prior?.favorite ?: false,
+                    createdAt = prior?.createdAt ?: nowMillis(),
+                ),
+            )
+
+            // Capítulos: um por `.opz`, ordem = natural sort dos nomes; id = `chapterId` interno.
+            val priorChapters = chapterDao.listForWork(obraId).associateBy { it.id }
+            val opzPaths = fs.list(obraDir)
+                .filter { it.name.endsWith(".opz") }
+                .sortedWith { a, b -> NaturalOrder.compare(a.name, b.name) }
+            opzPaths.forEachIndexed { index, opzPath ->
+                val opz = opzPath.toString()
+                val cm = OpzReader.manifest(opz)
+                val chapterId = cm?.chapterId ?: return@forEachIndexed // sem id estável → pula
+                val priorChapter = priorChapters[chapterId]
+                chapterDao.upsert(
+                    ChapterEntity(
+                        id = chapterId,
+                        workUuid = obraId,
+                        title = opzPath.name.removeSuffix(".opz"),
+                        archivePath = opz,
+                        orderIndex = index,
+                        pageCount = cm.pages.size,
+                        sourceKey = priorChapter?.sourceKey ?: LocalImportSource.KEY,
+                        detectedLayout = cm.detectedLayout,
+                        layoutOverride = priorChapter?.layoutOverride,
+                    ),
+                )
+            }
+        }
+    }
 }

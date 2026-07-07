@@ -56,7 +56,7 @@ class ReaderViewModel(
                     workOverride = work?.layoutOverride,
                     detected = chapter.detectedLayout,
                 )
-                val direction = work?.direction ?: ReadingDirection.LTR
+                val direction = work?.effectiveDirection ?: ReadingDirection.LTR
                 val pages = graph.sources.forChapter(chapter).pages(chapter)
                 val progress = graph.library.progress(chapterId)
                 val siblings = graph.library.observeChapters(chapter.workUuid).first()

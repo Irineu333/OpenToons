@@ -1,7 +1,6 @@
 package com.neoutils.opentoons.data.local.opz
 
 import com.neoutils.opentoons.domain.model.Layout
-import com.neoutils.opentoons.domain.model.ReadingDirection
 import com.neoutils.opentoons.util.ImageSize
 import com.neoutils.opentoons.util.LayoutHeuristic
 import com.neoutils.opentoons.util.readImageSize
@@ -44,13 +43,16 @@ object OpzWriter {
 
     /**
      * Grava o OPZ em [outputPath]. As páginas são emitidas pelo [block] via [PageSink.page];
-     * o `manifest.json` é montado no fim (ordem/dims coletadas + layout detectado + [direction]).
-     * Retorna a contagem, o layout detectado (heurística sobre as dims amostradas) e a capa.
+     * o `manifest.json` é montado no fim (ordem/dims coletadas + layout detectado + [chapterId]
+     * interno + [obraId]). A `direction` **não** entra no manifesto do capítulo (subiu para a
+     * obra, D4). Retorna a contagem, o layout detectado (heurística sobre as dims amostradas)
+     * e a capa.
      */
     fun write(
         fileSystem: FileSystem,
         outputPath: Path,
-        direction: ReadingDirection,
+        chapterId: String,
+        obraId: String? = null,
         sampleSize: Int = 8,
         block: (PageSink) -> Unit,
     ): Result {
@@ -63,8 +65,9 @@ object OpzWriter {
             block(sink)
             detected = LayoutHeuristic.detectFromSizes(sampleSizes(sink.sizes, sampleSize))
             val manifest = OpzManifest(
+                obraId = obraId,
+                chapterId = chapterId,
                 detectedLayout = detected.name,
-                direction = direction.name,
                 pages = sink.pages,
             )
             val manifestBytes =

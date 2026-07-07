@@ -37,19 +37,21 @@ a **chave estável de estado** (progresso, lido).
 
 ### Requirement: Capa de obra derivada
 
-No import da obra **e a cada capítulo adicionado**, o sistema SHALL (re)gerar uma thumbnail
-de capa `obras/{obraId}/cover.webp` a partir da página de capa referenciada no `work.json`. A
-`cover.webp` SHALL ser um **artefato derivado (cache) regenerável** e SHALL **não** alterar os
-bytes das páginas dos capítulos (nenhuma página é transcodificada).
+No import da obra, o sistema SHALL gerar **uma vez** uma thumbnail de capa
+`obras/{obraId}/cover.webp` a partir da página de capa referenciada no `work.json`. A
+`cover.webp` SHALL ser um **artefato derivado (cache)** e SHALL **não** alterar os bytes das
+páginas dos capítulos (nenhuma página é transcodificada). Adicionar capítulos a uma obra
+existente SHALL **não** regenerar a capa (capítulos adicionados são anexados e não trocam a
+capa da obra).
 
 #### Scenario: Capa gerada no import
 - **WHEN** uma nova obra é importada
 - **THEN** o sistema SHALL gerar `obras/{obraId}/cover.webp` a partir da página de capa
 
-#### Scenario: Capa regenerada ao adicionar capítulo
+#### Scenario: Capa não é regenerada ao adicionar capítulo
 - **WHEN** um novo capítulo é adicionado a uma obra existente
-- **THEN** o sistema SHALL regenerar `obras/{obraId}/cover.webp` e manter o `work.json`
-  coerente
+- **THEN** o sistema SHALL **não** regenerar `obras/{obraId}/cover.webp` (a capa da obra
+  permanece a gerada no import)
 
 #### Scenario: Páginas permanecem STORED e intactas
 - **WHEN** a capa é gerada

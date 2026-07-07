@@ -147,7 +147,7 @@ fun DetailScreen(
                         Text(work?.title ?: "", style = MaterialTheme.typography.titleLarge)
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Direção: ${work?.direction?.name ?: "-"}",
+                            "Direção: ${work?.effectiveDirection?.name ?: "-"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
