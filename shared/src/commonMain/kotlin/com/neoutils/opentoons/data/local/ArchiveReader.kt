@@ -29,6 +29,19 @@ interface ArchiveReader {
 
         fun isArchive(name: String): Boolean =
             name.substringAfterLast('.', "").lowercase() in ARCHIVE_EXTENSIONS
+
+        /**
+         * Desambiguação unidade vs pacote (D3): um container é **pacote** quando tem
+         * arquivos-arquivo (`.cbz`/`.cbr`) **e nenhuma imagem** — cada arquivo interno é um
+         * capítulo. Se há imagens, é **unidade** (as imagens são o conteúdo), mesmo que haja
+         * um `.cbz`/`.cbr` perdido entre elas (lixo de empacotamento) — o predicado por
+         * presença de imagem evita classificar mal um CBZ com arquivos aninhados espúrios.
+         */
+        fun isPackage(entries: List<String>): Boolean {
+            val hasImages = entries.any { isImage(it) }
+            val hasArchives = entries.any { isArchive(it) }
+            return hasArchives && !hasImages
+        }
     }
 }
 

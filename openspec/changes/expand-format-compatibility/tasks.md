@@ -38,6 +38,9 @@
 
 - [x] 4.1 Reader por formato: ZipReader (Okio, CBZ/ZIP) e RarReader (`RarArchive`, CBR/RAR)
 - [x] 4.2 Desambiguação unidade vs pacote (entradas = imagens vs `.cbz`/`.cbr`) — D3
+      > Regra por presença de imagem (D3): é pacote só quando há arquivos-arquivo E **nenhuma
+      > imagem**; havendo imagens é unidade. Corrige o caso real (One Piece v01.cbz) com `.cbz`
+      > espúrio aninhado entre as pastas — erro de empacotamento, ignorado. Regressão coberta.
 - [x] 4.3 Normalização: origem → capítulos → escritor OPZ → `obras/{obra}/{capítulo}.opz`
 - [x] 4.4 Ampliar o filtro do FileKit para `cbz`, `cbr`, `zip`, `rar`
 - [x] 4.5 Heurística de layout por capítulo lida durante a normalização (reusar Marco 1)

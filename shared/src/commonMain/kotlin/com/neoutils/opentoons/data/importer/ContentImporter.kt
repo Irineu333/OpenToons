@@ -109,8 +109,7 @@ class ContentImporter(
     private fun normalize(sourcePath: String, allowPackage: Boolean): List<SourceChapter> {
         val reader = ContainerFormats.open(sourcePath)
         val entries = reader.entryNames()
-        val isPackage = entries.any { ArchiveReader.isArchive(it) }
-        return if (isPackage) {
+        return if (ArchiveReader.isPackage(entries)) {
             if (!allowPackage) {
                 throw UnsupportedFormatException(
                     "Pacotes (ZIP/RAR) não podem ser adicionados dentro de uma obra. " +

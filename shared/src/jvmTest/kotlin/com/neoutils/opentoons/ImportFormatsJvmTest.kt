@@ -43,14 +43,27 @@ class ImportFormatsJvmTest {
     fun unidade_entradasSaoImagens_naoEhPacote() {
         val path = zipWith("001.jpg", "002.jpg", "ComicInfo.xml")
         val entries = ZipArchiveReader(path).entryNames()
-        assertFalse(entries.any { ArchiveReader.isArchive(it) })
+        assertFalse(ArchiveReader.isPackage(entries))
     }
 
     @Test
-    fun pacote_entradasSaoArquivosArquivo_ehPacote() {
+    fun pacote_soArquivosArquivo_semImagens_ehPacote() {
         val path = zipWith("vol1.cbz", "vol2.cbr")
         val entries = ZipArchiveReader(path).entryNames()
-        assertTrue(entries.any { ArchiveReader.isArchive(it) })
+        assertTrue(ArchiveReader.isPackage(entries))
+    }
+
+    @Test
+    fun unidadeComCbzPerdidoEntreImagens_naoEhPacote() {
+        // Regressão (One Piece v01.cbz): capítulos em pastas + `.cbz` espúrio aninhado. A
+        // presença de imagens deve mantê-lo como unidade — o `.cbz` perdido é ignorado.
+        val path = zipWith(
+            "Cap 1/001.jpg", "Cap 1/002.jpg",
+            "Cap 6/001.jpg", "Cap 6/Cap 6.cbz",
+            "Cap 7/001.jpg", "Cap 7/Cap 7.cbz",
+        )
+        val entries = ZipArchiveReader(path).entryNames()
+        assertFalse(ArchiveReader.isPackage(entries))
     }
 
     @Test
