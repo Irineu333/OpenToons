@@ -92,7 +92,7 @@ fun LibraryScreen(
                 }
                 LibraryUiState.Empty -> CenteredBox {
                     Text(
-                        "Nenhuma obra ainda.\nToque em Importar para adicionar um CBZ, CBR, ZIP ou RAR.",
+                        "Nenhuma obra ainda.\nToque em Importar para adicionar um ${ImportFormats.libraryLabel}.",
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(24.dp),

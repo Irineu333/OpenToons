@@ -22,4 +22,16 @@ object ImportFormats {
         add("cbz")
         if (rarImportSupported) add("cbr")
     }
+
+    /** Rótulo legível dos formatos de biblioteca, ex.: "CBZ, ZIP, CBR ou RAR" (ou "CBZ ou ZIP"). */
+    val libraryLabel: String = label(library)
+
+    private fun label(extensions: List<String>): String {
+        val names = extensions.map { it.uppercase() }
+        return when (names.size) {
+            0 -> ""
+            1 -> names[0]
+            else -> names.dropLast(1).joinToString(", ") + " ou " + names.last()
+        }
+    }
 }
