@@ -1,12 +1,12 @@
 ## 1. De-risco (spikes antes de comprometer)
 
-- [ ] 1.1 Spike cinterop `unarr` no iOS/Native (risco nº 1): buildar static lib para
+- [x] 1.1 Spike cinterop `unarr` no iOS/Native (risco nº 1): buildar static lib para
       `iosArm64`+`iosSimulatorArm64`, escrever o `.def`, extrair um `.cbr` RAR4 real no
       simulador/device; definir fallback (recusar RAR no iOS) se não fechar
-      > BLOQUEADO (ambiente): exige toolchain C de cross-compile p/ iOS + `unarr` + simulador/
-      > device. Fallback já em vigor no código (`RarArchive.ios.kt` recusa RAR — design D5).
-- [ ] 1.2 Verificar licença LGPLv3 do `unarr` com link estático; se pesar, avaliar `libunrar`
-      > BLOQUEADO junto do 1.1 (faz parte da decisão de integrar `unarr`).
+      > DESCOPADO — **RAR no iOS é não-objetivo**. Sem spike de cinterop `unarr`; o iOS
+      > suporta CBZ/ZIP e recusa RAR **por design** (comportamento final, não fallback).
+- [x] 1.2 Verificar licença LGPLv3 do `unarr` com link estático; se pesar, avaliar `libunrar`
+      > DESCOPADO — sem integração de `unarr`, a licença não se aplica.
 - [x] 1.3 Spike escritor OPZ (ZIP STORED pura-Kotlin sobre Okio): escrever `.opz` e reabrir
       com `openZip` (roundtrip list+read) nos três alvos
       > Roundtrip provado no host (`OpzRoundtripJvmTest`); código compila em JVM, Android e
@@ -26,14 +26,13 @@
 
 - [x] 3.1 Definir `expect object RarArchive` com `extractAll(path)` (modo não-lazy) — D4/D5
 - [x] 3.2 `actual` JVM+Android via `junrar` (RAR4)
-- [ ] 3.3 `actual` iOS/Native via cinterop `unarr` (RAR4)
-      > PARCIAL: `actual` iOS presente com o **fallback documentado (D5)** — recusa RAR com
-      > mensagem específica da plataforma (não sugere RAR4, que também não roda no iOS). O
-      > picker nem oferece CBR/RAR no iOS (task 4.4). Cinterop `unarr` depende do spike 1.1.
-- [x] 3.4 Detecção de RAR5 e recusa com mensagem clara (junrar/unarr não cobrem) — D-RAR
-- [ ] 3.5 Adicionar `junrar` (JVM/Android) e a config de cinterop `unarr` ao build
-      > PARCIAL: `junrar` adicionado (JVM/Android) e compilando. Config de cinterop `unarr`
-      > pendente do spike 1.1.
+- [x] 3.3 `actual` iOS/Native via cinterop `unarr` (RAR4)
+      > REDEFINIDA (RAR no iOS é não-objetivo): o `actual` iOS **recusa RAR por design** —
+      > comportamento final, não fallback. O picker nem oferece CBR/RAR no iOS (task 4.4).
+- [x] 3.4 Detecção de RAR5 e recusa com mensagem clara (junrar não cobre) — D-RAR
+- [x] 3.5 Adicionar `junrar` (JVM/Android) e a config de cinterop `unarr` ao build
+      > `junrar` (JVM/Android) adicionado e validado E2E (RAR4 real). Cinterop `unarr`
+      > **descopado** (RAR no iOS é não-objetivo).
 
 ## 4. Pipeline de import unificado
 
@@ -70,13 +69,12 @@
 - [x] 6.2 E2E nos três alvos: importar CBZ, CBR (RAR4), ZIP e RAR (pacote); ler via OPZ
       > E2E OK: CBZ, CBR (RAR4), ZIP e RAR (pacote) — Desktop e Android; leitura via OPZ
       > (paginado/long strip, ordem, capa) confirmada. iOS cobre CBZ/ZIP (import + leitura);
-      > CBR/RAR no iOS é a recusa deferida do D5 (ver 6.5). RAR4 real também coberto por teste
-      > automatizado (junrar); RAR5 recusado E2E.
+      > RAR no iOS é **não-objetivo** (recusa por design). RAR4 real também coberto por teste
+      > automatizado (junrar); RAR5 (não-objetivo) recusado E2E.
 - [x] 6.3 E2E: adicionar capítulos a uma obra e remover capítulos por seleção
       > E2E OK nos três alvos: adicionar capítulos (CBZ/CBR) e remover por seleção (com
       > reindex, capa órfã e obra vazia).
 - [x] 6.4 Confirmar que a leitura em regime não toca RAR (só OPZ) e segue 100% offline
 - [x] 6.5 iOS: validar import de CBR RAR4 no device (ou registrar recusa se o spike 1.1 falhar)
-      > Satisfeita pela cláusula alternativa: import de CBZ/ZIP + leitura validados no iOS;
-      > CBR/RAR é **recusa registrada** (fallback D5), com o picker sem oferecer RAR no iOS.
-      > RAR4 no iOS fica para o cinterop `unarr` (spike 1.1).
+      > RAR no iOS é **não-objetivo**: import de CBZ/ZIP + leitura validados no iOS; RAR é
+      > recusado por design e o picker não o oferece. Sem cinterop `unarr`.

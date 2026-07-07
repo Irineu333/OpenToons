@@ -14,8 +14,8 @@ class UnsupportedFormatException(message: String) : Exception(message)
  * A leitura em regime segue Okio-pura (só OPZ); o RAR vive **apenas no caminho de import**.
  *
  *  - `actual` JVM/Android → `junrar` (RAR4, Java puro; extração por entrada, não-solid).
- *  - `actual` iOS/Native → cinterop `unarr` (spike 1.1); enquanto o spike não fecha, recusa
- *    RAR com mensagem clara (fallback documentado D5 — degradação isolada por plataforma).
+ *  - `actual` iOS/Native → **RAR é não-objetivo**: recusa por design (sem cinterop), o iOS
+ *    lê OPZ e importa CBZ/ZIP; o picker nem oferece RAR (`ImportFormats`).
  */
 expect class RarArchive(path: String) : AutoCloseable {
     /** Nomes das entradas-arquivo (sem diretórios), `/` como separador. RAR5 é recusado. */
@@ -30,7 +30,7 @@ expect class RarArchive(path: String) : AutoCloseable {
 /**
  * Detecção de assinatura RAR (task 3.4). O bloco de marca do RAR4 é `Rar!\x1A\x07\x00`
  * (7 bytes); o do RAR5 é `Rar!\x1A\x07\x01\x00` (8 bytes) — diferenciados pelo 7º byte.
- * `junrar`/`unarr` **só cobrem RAR4**; RAR5 é recusado no import com mensagem clara.
+ * `junrar` **só cobre RAR4**; RAR5 é recusado no import com mensagem clara (não-objetivo).
  */
 object RarFormat {
 

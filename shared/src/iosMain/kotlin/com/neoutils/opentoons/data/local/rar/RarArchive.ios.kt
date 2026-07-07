@@ -1,20 +1,17 @@
 package com.neoutils.opentoons.data.local.rar
 
 /**
- * `actual` iOS/Native (task 3.3). O caminho definitivo é o cinterop `unarr` (RAR4), que
- * depende do **spike 1.1** (static lib `iosArm64`/`iosSimulatorArm64` + `.def`). Enquanto o
- * spike não fecha, aplica-se o **fallback documentado (design D5)**: RAR é recusado no iOS com
- * mensagem clara — a degradação fica isolada nessa plataforma, sem afetar a leitura de OPZ nem
- * o import de CBZ/ZIP. Ao integrar o `unarr`, só este `actual` muda.
+ * `actual` iOS/Native (design D4/D5). **RAR no iOS é não-objetivo**: não há RAR em Kotlin
+ * puro e o cinterop a uma lib C (`unarr`/`libunrar`) traria build nativo e licença — fora de
+ * escopo. O iOS lê OPZ e importa CBZ/ZIP normalmente, e recusa qualquer RAR **por design**
+ * (comportamento final, não fallback). O picker nem oferece RAR no iOS (`ImportFormats`).
  */
 actual class RarArchive actual constructor(path: String) : AutoCloseable {
 
     init {
-        // No iOS nenhum RAR é suportado (nem RAR4 nem RAR5) enquanto o cinterop `unarr` não
-        // fecha. Não diferencia a variante para não sugerir RAR4 (que também não roda aqui):
-        // recusa qualquer RAR com uma mensagem específica da plataforma.
+        // RAR (RAR4 ou RAR5) não é suportado no iOS por design — recusa com mensagem clara.
         throw UnsupportedFormatException(
-            "Import de RAR/CBR ainda não disponível no iOS (suporte a RAR pendente). " +
+            "Import de RAR/CBR não é suportado no iOS. " +
                 "Importe CBZ ou ZIP; a leitura de obras já importadas segue normal.",
         )
     }

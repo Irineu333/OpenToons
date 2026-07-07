@@ -2,19 +2,24 @@
 
 ### Requirement: Importar obra de arquivo local
 
-O sistema SHALL permitir importar obras a partir de arquivos locais em quatro formatos,
-via seletor de arquivo nativo comum a todas as plataformas (Android, Desktop, iOS):
-`cbz` e `cbr` (**unidade** — imagens diretas) e `zip` e `rar` (**pacote** — arquivos
-`.cbz`/`.cbr` internos, cada um um capítulo). O seletor SHALL restringir a seleção a
-essas quatro extensões.
+O sistema SHALL permitir importar obras a partir de arquivos locais, via seletor de
+arquivo nativo (Android, Desktop, iOS): `cbz` e `cbr` (**unidade** — imagens diretas) e
+`zip` e `rar` (**pacote** — arquivos `.cbz`/`.cbr` internos, cada um um capítulo). O
+seletor SHALL restringir a seleção às extensões **suportadas pela plataforma**: `cbz` e
+`zip` sempre; `cbr` e `rar` apenas onde há descompactação RAR (Desktop e Android). No iOS,
+RAR é **não-objetivo**, então o seletor oferece só `cbz` e `zip`.
 
 #### Scenario: Selecionar e importar um CBZ ou CBR
 - **WHEN** o usuário aciona a importação e escolhe um `.cbz` ou `.cbr` no seletor
 - **THEN** o sistema cria uma obra com seus capítulos na biblioteca
 
 #### Scenario: Filtrar por extensão suportada
-- **WHEN** o seletor de arquivo é aberto
+- **WHEN** o seletor de arquivo é aberto no Desktop ou Android
 - **THEN** ele SHALL restringir a seleção às extensões `cbz`, `cbr`, `zip` e `rar`
+
+#### Scenario: Seletor no iOS (RAR não-objetivo)
+- **WHEN** o seletor de arquivo é aberto no iOS
+- **THEN** ele SHALL oferecer apenas `cbz` e `zip` (RAR não é suportado no iOS)
 
 #### Scenario: Desambiguar unidade vs pacote
 - **WHEN** um container é importado
@@ -127,23 +132,24 @@ existentes, sem reescrever os capítulos anteriores.
 - **WHEN** o usuário tenta importar um `.zip`/`.rar` dentro de uma obra
 - **THEN** o sistema SHALL recusar a operação com mensagem clara
 
-### Requirement: Descompactação RAR com cobertura RAR4 e recusa de RAR5
+### Requirement: Descompactação RAR4 no Desktop/Android; RAR no iOS e RAR5 não-objetivos
 
-O sistema SHALL descompactar arquivos RAR (CBR e pacotes RAR) no formato **RAR4** em todas
-as plataformas, usando `junrar` em JVM/Android e cinterop `unarr` em iOS/Native. Arquivos
-**RAR5** SHALL ser recusados no import com mensagem clara — não são suportados neste marco.
-A descompactação RAR SHALL ocorrer **apenas no caminho de import**; a leitura em regime não
-depende de RAR.
+O sistema SHALL descompactar arquivos RAR (CBR e pacotes RAR) no formato **RAR4** no
+**Desktop e Android**, usando `junrar`. **RAR no iOS** é **não-objetivo**: o iOS SHALL
+recusar RAR no import com mensagem clara (e o seletor não oferece RAR). Arquivos **RAR5**
+são **não-objetivos** em todas as plataformas e SHALL ser recusados no import com mensagem
+clara. A descompactação RAR SHALL ocorrer **apenas no caminho de import**; a leitura em
+regime não depende de RAR.
 
-#### Scenario: Importar CBR RAR4
-- **WHEN** o usuário importa um `.cbr` em formato RAR4
-- **THEN** o sistema SHALL extrair suas páginas e materializar OPZ, em qualquer plataforma
+#### Scenario: Importar CBR RAR4 (Desktop/Android)
+- **WHEN** o usuário importa um `.cbr` em formato RAR4 no Desktop ou Android
+- **THEN** o sistema SHALL extrair suas páginas e materializar OPZ
 
 #### Scenario: Recusar RAR5
 - **WHEN** o usuário importa um arquivo em formato RAR5
 - **THEN** o sistema SHALL recusar o import com mensagem indicando que RAR5 não é suportado
 
-#### Scenario: Degradação isolada por plataforma
-- **WHEN** o cinterop RAR não estiver disponível numa plataforma
-- **THEN** o import de RAR SHALL falhar com mensagem clara naquela plataforma, sem afetar a
-  leitura de OPZ nem o import de CBZ/ZIP
+#### Scenario: RAR no iOS recusado (não-objetivo)
+- **WHEN** um arquivo RAR (CBR ou pacote) chega ao import no iOS
+- **THEN** o sistema SHALL recusar com mensagem clara, sem afetar a leitura de OPZ nem o
+  import de CBZ/ZIP

@@ -2,8 +2,8 @@ package com.neoutils.opentoons.util
 
 /**
  * Extensões de import oferecidas no seletor de arquivo, por plataforma. CBR/RAR só entram
- * onde a descompactação RAR existe ([rarImportSupported]) — no iOS, enquanto o cinterop
- * `unarr` não fecha (spike 1.1), o picker não sugere formatos que sempre falhariam (D5).
+ * onde a descompactação RAR existe ([rarImportSupported]) — no iOS RAR é **não-objetivo**,
+ * então o picker não sugere formatos que sempre falhariam (D4/D5).
  */
 object ImportFormats {
 

@@ -18,10 +18,12 @@ novo e incompatível).
 - Aceitar CBZ, CBR, ZIP (pacote de CBZ) e RAR (pacote de CBR) na importação de obra.
 - Normalizar todo import para **OPZ por capítulo** (`obras/{obra}/{capítulo}.opz`).
 - Adicionar capítulos a uma obra existente (CBZ/CBR) e remover capítulos (multi-seleção).
-- **RAR4 em todas as plataformas**; RAR5 recusado com clareza (não implementado).
+- **RAR4 no Desktop e Android** (junrar); RAR5 recusado com clareza (não implementado).
 - Manter a leitura em regime **inalterada** (Okio `openZip` sobre OPZ, cross-platform).
 
 **Non-Goals:**
+- **RAR no iOS** — sem cinterop `unarr`; o iOS suporta CBZ/ZIP e recusa RAR **por design**
+  (o picker não oferece RAR). Elimina o risco nº 1 (cinterop) e a licença LGPLv3 do `unarr`.
 - **RAR5** (ver D-RAR / anotação 1). Compressão/criação de RAR (proibida por licença).
 - Transcode de imagens (WebP/downscale) para encolher footprint — alavanca separada.
 - Migração de bibliotecas do Marco 1 — pré-release, recriação destrutiva.
@@ -70,25 +72,28 @@ container é **pacote** quando suas entradas de topo são arquivos-arquivo (`.cb
 é **unidade** quando as entradas são imagens (comportamento legado do Marco 1). No pacote,
 cada arquivo interno vira **um capítulo** (ordenação natural dos nomes).
 
-### D4 — RAR via `expect/actual` (Caminho A)
+### D4 — RAR via `expect/actual` (Caminho A), RAR no iOS é não-objetivo
 ```
-  commonMain:  expect RarArchive.extractAll(path): List<(name, bytes)>
+  commonMain:  expect RarArchive(path) { entryNames(); read(name); close() }
       ├─ jvmMain     → junrar   (RAR4, Java puro, zero build nativo)
       ├─ androidMain → junrar   (RAR4, Java puro)
-      └─ iosMain     → cinterop unarr (RAR4; static lib iosArm64+iosSimulatorArm64)
+      └─ iosMain     → recusa por design (RAR no iOS = não-objetivo)
 ```
-**Por quê Caminho A:** melhor custo×benefício. `junrar` cobre JVM/Android sem build
-nativo; `unarr` (origem *The Unarchiver*, feito para extrair comics) cobre iOS com **um**
-build nativo. Cobre **RAR4 em todas** — a maior fatia dos CBR reais. O `RarArchive` é
-desenhado para trocar `unarr`→`libunrar` (RAR5) depois **sem tocar o resto**.
+**Por quê:** `junrar` cobre Desktop/Android (RAR4, a maior fatia dos CBR reais) sem build
+nativo. **RAR no iOS ficou fora de escopo** — o cinterop `unarr` era o risco nº 1 e uma
+obrigação de licença LGPLv3; abrir mão dele mantém o iOS 100% Kotlin-puro (lê OPZ, importa
+CBZ/ZIP). O `RarArchive` do iOS recusa RAR com mensagem clara, e o picker nem o oferece.
+**Extração por-entrada** (não extract-all): o import escreve OPZ em streaming, então o
+`junrar` extrai página a página (pico de memória = 1 página; ver correção de OOM).
 
-### D5 — RAR só no import, modo "extract-all" (não-lazy)
-Como tudo vira OPZ, o RAR **não precisa de leitura aleatória por página**. Basta iterar
-entradas e despejar bytes uma vez → alimentar o escritor OPZ. Isso **minimiza a superfície
-cinterop** no Native (sem seek por entrada) e mantém `CbzArchive`/`LocalImportSource`
-(leitura em regime) **Okio-puro e intocados**. Consequência: a capacidade RAR **pode
-degradar por plataforma sem quebrar o leitor** — iOS lê RAR4 e recusa RAR5; o leitor só
-enxerga OPZ.
+### D5 — RAR só no import; extração por-entrada (streaming)
+Como tudo vira OPZ, o RAR vive **só no caminho de import** e mantém `CbzArchive`/
+`LocalImportSource` (leitura em regime) **Okio-puro e intocados** — o leitor só enxerga OPZ.
+A extração é **por-entrada** alimentando o escritor OPZ streaming (pico de memória = 1
+página; a intenção original de "extract-all" foi revista ao remover o cinterop iOS, que era
+sua única motivação — ver correção de OOM). Consequência: a capacidade RAR **degrada por
+plataforma sem quebrar o leitor** — Desktop/Android leem RAR4; **iOS recusa RAR (não-objetivo)**
+e RAR5 é recusado em todo lugar.
 
 ### D6 — Escritor OPZ pura-Kotlin (ZIP STORED sobre Okio)
 Okio `openZip` é **read-only**; escrever ZIP no Native não tem lib pronta. Mas um ZIP
@@ -117,46 +122,43 @@ Segue o precedente explícito da task 9.14 do Marco 1. **Por quê:** não há re
 ```
                 │  CBZ/ZIP  │  CBR/RAR4          │  CBR/RAR5
   ──────────────┼───────────┼────────────────────┼──────────────────────────
-  JVM/Desktop   │  ✓ Okio   │  ✓ junrar (Java)   │  ⚠ só via nativo (JNI)
-  Android       │  ✓ Okio   │  ✓ junrar (Java)   │  ⚠ só via nativo (NDK)
-  iOS/Native    │  ✓ Okio   │  ⚠ cinterop unarr  │  ⚠ cinterop libunrar (C++)
+  JVM/Desktop   │  ✓ Okio   │  ✓ junrar (Java)   │  ✗ não-objetivo
+  Android       │  ✓ Okio   │  ✓ junrar (Java)   │  ✗ não-objetivo
+  iOS/Native    │  ✓ Okio   │  ✗ não-objetivo    │  ✗ não-objetivo
   ──────────────┴───────────┴────────────────────┴──────────────────────────
-  ✓ pronto/trivial   ⚠ viável com trabalho real   (não há ✗ duro)
+  ✓ pronto/trivial   ✗ não-objetivo (recusado por design, mensagem clara)
 ```
 
-### Anotação 1 — RAR5 inviável no caminho pura-Kotlin (NÃO implementado)
-`junrar` (JVM/Android) e `unarr` (Native) **só leem RAR4**; `junrar` lança exceção em
-RAR5. Cobrir RAR5 exigiria subir o core C++ `libunrar` (RARLAB) em **todas** as
-plataformas (cinterop no Native, JNI no Android/Desktop) — outro patamar de esforço.
-**Decisão:** RAR5 é **recusado no import** com mensagem clara; não implementado neste marco.
+### Anotação 1 — RAR5 é não-objetivo
+`junrar` **só lê RAR4** e lança exceção em RAR5. Cobrir RAR5 exigiria o core C++ `libunrar`
+(RARLAB) via JNI/cinterop — outro patamar de esforço. **Decisão:** RAR5 é **não-objetivo**,
+recusado no import com mensagem clara.
 
-### Anotação 2 — iOS/Native não tem opção pura, só cinterop
-Não existe RAR em Kotlin. iOS obriga cinterop a lib C: `unarr` (LGPLv3, RAR4, comic-focus)
-ou `libunrar` (RARLAB, freeware decompress-only, RAR5). Escolhido `unarr` para RAR4. Exige
-build de static lib para `iosArm64`+`iosSimulatorArm64` e um `.def` — o **spike de de-risco**.
+### Anotação 2 — RAR no iOS é não-objetivo
+Não existe RAR em Kotlin puro; o iOS exigiria cinterop a uma lib C (`unarr`/`libunrar`),
+com build de static lib + `.def` e obrigação de licença. **Decisão:** **RAR no iOS ficou
+fora de escopo** — o iOS lê OPZ e importa CBZ/ZIP, e recusa RAR por design. Sem cinterop, o
+iOS permanece 100% Kotlin-puro e o risco nº 1 desaparece.
 
-### Anotação 3 — o custo real é build nativo, não a API
-JVM+Android com `junrar` = zero build nativo (um jar). O peso está no cinterop iOS. Se um
-dia subir RAR5, soma-se NDK (Android) e JNI/`7-zip-jbinding` (Desktop).
+### Anotação 3 — o custo evitado era build nativo
+JVM+Android com `junrar` = zero build nativo (um jar). O peso estaria no cinterop iOS —
+evitado ao tornar RAR-no-iOS não-objetivo.
 
 ## Risks / Trade-offs
 
-- **Cinterop `unarr` no iOS** (risco nº 1) → **Mitigação:** spike isolado antes de
-  comprometer; fallback = recusar CBR/RAR no iOS temporariamente (leitura de OPZ já
-  funciona; import de RAR degrada só nessa plataforma sem quebrar nada — ver D5).
-- **Licença LGPLv3 do `unarr`** com link estático (obrigação de relink) → **Mitigação:**
-  avaliar no spike; alternativa `libunrar` (licença mais permissiva para nosso uso).
 - **Import mais lento** que o copy-in intacto (decode RAR + re-zip) → **Mitigação:** import
-  é one-time, em background, com UI de progresso; STORED evita recompressão.
+  é one-time, em background, com UI de progresso; STORED evita recompressão; escrita OPZ e
+  extração RAR são **streaming por página** (pico de memória = 1 página).
 - **Escritor ZIP próprio** pode gerar OPZ que o `openZip` não reabra → **Mitigação:** teste
-  de roundtrip (escreve OPZ → `openZip` lista+lê) nos três alvos, no estilo do
-  `CbzArchiveJvmTest`.
-- **RAR5 recusado** frustra quem tem CBR moderno → **Mitigação:** mensagem clara ("RAR5
-  não suportado; reempacote como CBZ ou RAR4") e porta aberta (D4) para `libunrar` depois.
+  de roundtrip (escreve OPZ → `openZip` lista+lê), validado no host e E2E nos três alvos.
+- **RAR5 / RAR no iOS recusados** frustram quem tem CBR moderno ou usa iOS → **Mitigação:**
+  mensagem clara por caso ("RAR5 não suportado; reempacote como CBZ ou RAR4"; "RAR não
+  disponível no iOS, importe CBZ/ZIP") e o picker só oferece o que a plataforma aceita.
 
 ## Open Questions
 
-- **Fatia do RAR5 no corpus real** de CBR — se for alta, antecipa o tier `libunrar`.
+- **RAR no iOS / RAR5**: tornados **não-objetivos** — se a demanda por CBR moderno ou por
+  RAR no iOS crescer, reabrir avaliando o tier C++ (`libunrar` via cinterop/JNI).
 - **Manifesto OPZ**: incluir sha-256 por página já agora (custo baixo, formato-pronto) ou
   manter deferido? Decidido por ora **deferido** (D7), reavaliar no início do Marco 2.
 - **Pacote aninhado**: um ZIP contendo ZIPs contendo CBZs — suportar recursão ou limitar a
