@@ -62,7 +62,7 @@ class RescanJvmTest {
             fs, obraDir,
             WorkManifest(
                 obraId = obraId, title = "Título do Disco", description = "Sinopse do Disco",
-                direction = "RTL", cover = WorkCover(chapterId, "001.jpg"),
+                direction = "RTL", cover = WorkCover.page(chapterId, "001.jpg"),
             ),
         )
 

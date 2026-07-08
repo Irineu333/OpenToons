@@ -1,5 +1,6 @@
 package com.neoutils.opentoons
 
+import com.neoutils.opentoons.data.local.work.CoverSource
 import com.neoutils.opentoons.data.local.work.WorkCover
 import com.neoutils.opentoons.data.local.work.WorkManifest
 import com.neoutils.opentoons.data.local.work.WorkManifestStore
@@ -67,5 +68,23 @@ class WorkManifestJvmTest {
         assertNotNull(read)
         assertEquals("Obra Legada", read.title)
         assertEquals("", read.description)
+    }
+
+    @Test
+    fun read_capaAntigaSemSource_desserializaComoPagina() {
+        // Forward-compat (improve-import): um work.json cuja `cover` é o par antigo
+        // {chapterId, entryName} sem `source` deve reler como capa de PÁGINA (default).
+        val obraDir = tempObraDir()
+        val legacyJson = """
+            {"version":1,"obraId":"o","title":"T","direction":"LTR",
+             "cover":{"chapterId":"cap-1","entryName":"001.jpg"}}
+        """.trimIndent()
+        FileSystem.SYSTEM.write(WorkManifestStore.pathIn(obraDir)) { write(legacyJson.encodeToByteArray()) }
+
+        val read = WorkManifestStore.read(FileSystem.SYSTEM, obraDir)
+        assertNotNull(read)
+        assertEquals(CoverSource.PAGE, read.cover?.source)
+        assertEquals("cap-1", read.cover?.chapterId)
+        assertEquals("001.jpg", read.cover?.entryName)
     }
 }

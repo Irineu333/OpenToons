@@ -97,7 +97,7 @@ class ContentImporter(
                 defaultTitle = defaultTitle,
                 chapterIds = candidates.map { it.chapterId },
                 coverCandidates = candidates,
-                defaultCover = candidates.firstOrNull()?.let { WorkCover(it.chapterId, it.entryName) },
+                defaultCover = candidates.firstOrNull()?.let { CoverChoice.Page(it.chapterId, it.entryName) },
             )
         } catch (e: Throwable) {
             runCatching { FileSystem.SYSTEM.delete(sourceTemp, mustExist = false) }
@@ -152,9 +152,10 @@ class ContentImporter(
         val direction = ReadingDirection.LTR
         val title = edits.title.trim().ifBlank { draft.defaultTitle }.ifBlank { "Sem título" }
         val description = edits.description.trim()
-        // Capa escolhida na revisão; fallback = 1ª página do 1º capítulo (default). Sempre uma
-        // página real materializada ({chapterId, entryName}), invariante da spec preservada.
-        val cover = resolveCover(edits.cover, results)
+        // Capa autônoma (improve-import): materializa a `cover.webp` a partir da fonte escolhida —
+        // página da obra (default) ou imagem externa — e registra a proveniência no `work.json`.
+        onProgress("Gerando capa…")
+        val (cover, coverPath) = materializeCover(edits.cover, obraDir, results)
 
         // `work.json` **antes** do banco (D6): evita órfãos e é a fonte de verdade do dado.
         onProgress("Gravando manifesto…")
@@ -169,12 +170,6 @@ class ContentImporter(
                 cover = cover,
             ),
         )
-        // `cover.webp` derivada (cache regenerável, D5) — nenhuma página é transcodificada.
-        val coverPath = cover?.let { c ->
-            results.firstOrNull { it.first.id == c.chapterId }?.first?.archivePath?.toPath()?.let { opz ->
-                CoverStore.generate(FileSystem.SYSTEM, obraDir, opz, c.entryName)
-            }
-        }?.toString()
 
         val work = WorkEntity(
             uuid = workUuid,
@@ -192,14 +187,36 @@ class ContentImporter(
         work.toDomain()
     }
 
-    /** Resolve a capa: usa a escolhida se apontar um capítulo materializado, senão a 1ª página. */
-    private fun resolveCover(
-        chosen: WorkCover?,
+    /**
+     * Materializa a capa da obra e devolve o par (proveniência p/ `work.json`, caminho da
+     * `cover.webp`). A `cover.webp` é gerada a partir dos **bytes da fonte escolhida**: uma imagem
+     * externa (grava direto), ou a página escolhida (extrai do OPZ). Se a escolha for inválida ou
+     * ausente, cai na **1ª página materializada** (default). Nenhuma página é transcodificada.
+     */
+    private fun materializeCover(
+        choice: CoverChoice?,
+        obraDir: Path,
         results: List<Pair<ChapterEntity, String?>>,
-    ): WorkCover? {
-        if (chosen != null && results.any { it.first.id == chosen.chapterId }) return chosen
-        val coverChapter = results.firstOrNull { it.second != null } ?: return null
-        return WorkCover(coverChapter.first.id, coverChapter.second!!)
+    ): Pair<WorkCover?, String?> {
+        val fs = FileSystem.SYSTEM
+        when (choice) {
+            is CoverChoice.External -> {
+                val path = CoverStore.writeFromBytes(fs, obraDir, choice.bytes)?.toString()
+                return (if (path != null) WorkCover.external() else null) to path
+            }
+            is CoverChoice.Page -> {
+                val opz = results.firstOrNull { it.first.id == choice.chapterId }?.first?.archivePath
+                if (opz != null) {
+                    val path = CoverStore.generate(fs, obraDir, opz.toPath(), choice.entryName)?.toString()
+                    return WorkCover.page(choice.chapterId, choice.entryName) to path
+                }
+            }
+            null -> Unit
+        }
+        // Fallback: 1ª página materializada do 1º capítulo (default da spec).
+        val fallback = results.firstOrNull { it.second != null } ?: return null to null
+        val path = CoverStore.generate(fs, obraDir, fallback.first.archivePath.toPath(), fallback.second!!)?.toString()
+        return WorkCover.page(fallback.first.id, fallback.second!!) to path
     }
 
     /**
@@ -452,8 +469,19 @@ data class ImportDraft(
     val defaultTitle: String,
     val chapterIds: List<String>,
     val coverCandidates: List<CoverCandidate>,
-    val defaultCover: WorkCover?,
+    val defaultCover: CoverChoice?,
 )
+
+/**
+ * Fonte da capa escolhida na revisão (improve-import): uma **página** da própria obra (default,
+ * `{chapterId, entryName}`) ou uma **imagem externa** (bytes já retidos em memória durante a
+ * revisão, gravados como `cover.webp` no commit). Distintas apenas pela origem — a capa resultante
+ * é sempre uma imagem autônoma da obra.
+ */
+sealed interface CoverChoice {
+    data class Page(val chapterId: String, val entryName: String) : CoverChoice
+    class External(val bytes: ByteArray) : CoverChoice
+}
 
 /** Candidata a capa na revisão: 1ª página de um capítulo + sua thumbnail (bytes já codificados). */
 data class CoverCandidate(
@@ -467,5 +495,5 @@ data class CoverCandidate(
 data class ImportEdits(
     val title: String,
     val description: String,
-    val cover: WorkCover?,
+    val cover: CoverChoice?,
 )

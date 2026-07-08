@@ -4,9 +4,10 @@ import androidx.room.Room
 import com.neoutils.opentoons.data.db.OpenToonsDatabase
 import com.neoutils.opentoons.data.db.buildDatabase
 import com.neoutils.opentoons.data.importer.ContentImporter
+import com.neoutils.opentoons.data.importer.CoverChoice
 import com.neoutils.opentoons.data.importer.ImportEdits
+import com.neoutils.opentoons.data.local.work.CoverSource
 import com.neoutils.opentoons.data.local.work.CoverStore
-import com.neoutils.opentoons.data.local.work.WorkCover
 import com.neoutils.opentoons.data.local.work.WorkManifestStore
 import com.neoutils.opentoons.data.repository.LibraryRepository
 import io.github.vinceglb.filekit.FileKit
@@ -28,6 +29,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -129,7 +131,7 @@ class ImportReviewJvmTest {
             ImportEdits(
                 title = "Título Editado",
                 description = "Sinopse editada",
-                cover = WorkCover(chosen.chapterId, chosen.entryName),
+                cover = CoverChoice.Page(chosen.chapterId, chosen.entryName),
             ),
         )
         createdWorkUuids += work.id.uuid
@@ -138,17 +140,46 @@ class ImportReviewJvmTest {
         assertEquals("Título Editado", work.title)
         assertEquals("Sinopse editada", work.description)
 
-        // work.json (fonte de verdade) reflete título/descrição e a capa escolhida.
+        // work.json (fonte de verdade) reflete título/descrição e a proveniência da capa (página).
         val obraDir = obrasDir.absolutePath.toPath() / work.id.uuid
         val manifest = WorkManifestStore.read(fs, obraDir)
         assertNotNull(manifest)
         assertEquals("Título Editado", manifest.title)
         assertEquals("Sinopse editada", manifest.description)
+        assertEquals(CoverSource.PAGE, manifest.cover?.source)
         assertEquals(chosen.chapterId, manifest.cover?.chapterId)
         assertEquals(chosen.entryName, manifest.cover?.entryName)
 
         // cover.webp derivada foi gerada; a origem temporária foi consumida.
         assertTrue(fs.exists(CoverStore.pathIn(obraDir)))
         assertFalse(File(draft.sourceTempPath).exists())
+    }
+
+    @Test
+    fun commit_comImagemExterna_gravaCapaAutonoma_semReferenciaDePagina() = runBlocking {
+        val importer = newImporter()
+        val draft = importer.prepare(sourceCbz())
+
+        // Capa externa: bytes de uma imagem que não é página nenhuma da obra.
+        val external = pngBytes(99)
+        val work = importer.commit(
+            draft,
+            ImportEdits(
+                title = "Com Capa Externa",
+                description = "",
+                cover = CoverChoice.External(external),
+            ),
+        )
+        createdWorkUuids += work.id.uuid
+
+        val obraDir = obrasDir.absolutePath.toPath() / work.id.uuid
+        val manifest = WorkManifestStore.read(fs, obraDir)
+        assertNotNull(manifest)
+        // Proveniência = externa, sem {chapterId, entryName}; a capa é autônoma.
+        assertEquals(CoverSource.EXTERNAL, manifest.cover?.source)
+        assertNull(manifest.cover?.chapterId)
+        assertNull(manifest.cover?.entryName)
+        // cover.webp foi gerada a partir dos bytes externos.
+        assertTrue(fs.exists(CoverStore.pathIn(obraDir)))
     }
 }

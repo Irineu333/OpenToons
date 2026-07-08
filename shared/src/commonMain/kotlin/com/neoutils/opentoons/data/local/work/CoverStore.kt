@@ -33,7 +33,21 @@ object CoverStore {
         val pageBytes = runCatching {
             CbzArchive.readEntry(coverOpz.toString(), entryName)
         }.getOrNull() ?: return null
-        val thumbnail = CoverEncoder.encodeThumbnail(pageBytes) ?: return null
+        return writeFromBytes(fileSystem, obraDir, pageBytes)
+    }
+
+    /**
+     * Grava `obras/{obraId}/cover.webp` a partir de **bytes de imagem arbitrários** (improve-import)
+     * — usada quando a capa vem de uma **imagem externa** escolhida pelo usuário, sem página de
+     * origem. Retorna o caminho gravado, ou `null` se os bytes não decodificarem. Diferente da capa
+     * de página, esta `cover.webp` é a **fonte durável** (não há de onde regenerá-la).
+     */
+    fun writeFromBytes(
+        fileSystem: FileSystem,
+        obraDir: Path,
+        sourceBytes: ByteArray,
+    ): Path? {
+        val thumbnail = CoverEncoder.encodeThumbnail(sourceBytes) ?: return null
         fileSystem.createDirectories(obraDir)
         val out = pathIn(obraDir)
         fileSystem.write(out) { write(thumbnail) }

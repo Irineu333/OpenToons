@@ -34,12 +34,29 @@ data class WorkManifest(
 }
 
 /**
- * Identidade da capa (dado, fiel): aponta uma **página real** dentro de um capítulo pelo
- * `chapterId` interno e o nome da entrada. Vira CID no Marco 2. Distinta da `cover.webp`, que
- * é a thumbnail derivada/regenerável (cache de UI, D5).
+ * **Proveniência** da capa da obra (improve-import) — a capa é uma **imagem autônoma**
+ * (`cover.webp`), não uma referência viva a uma página. Este registro apenas descreve **de onde**
+ * a capa veio: de uma [CoverSource.PAGE] (`{chapterId, entryName}` da página extraída) ou de uma
+ * imagem [CoverSource.EXTERNAL] importada pelo usuário. Apagar o capítulo de origem **não**
+ * invalida a capa. Forward-compatible: manifestos antigos sem `source` desserializam como `PAGE`
+ * (o formato anterior era só `{chapterId, entryName}`). Vira CID no Marco 2.
  */
 @Serializable
 data class WorkCover(
-    val chapterId: String,
-    val entryName: String,
-)
+    val source: CoverSource = CoverSource.PAGE,
+    val chapterId: String? = null,
+    val entryName: String? = null,
+) {
+    companion object {
+        /** Capa extraída de uma página da obra (default). */
+        fun page(chapterId: String, entryName: String) =
+            WorkCover(CoverSource.PAGE, chapterId, entryName)
+
+        /** Capa vinda de uma imagem externa (sem referência de página). */
+        fun external() = WorkCover(CoverSource.EXTERNAL)
+    }
+}
+
+/** Origem da capa: uma página da própria obra ou uma imagem externa importada. */
+@Serializable
+enum class CoverSource { PAGE, EXTERNAL }

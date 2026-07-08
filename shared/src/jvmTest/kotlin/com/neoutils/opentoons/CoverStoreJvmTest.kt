@@ -60,4 +60,17 @@ class CoverStoreJvmTest {
         // Páginas intactas (STORED): gerar a capa não toca no `.opz` do capítulo.
         assertEquals(listOf("001.png"), OpzReader.pageNames(opz.toString()))
     }
+
+    @Test
+    fun writeFromBytes_geraCoverDeImagemExterna_decodificavelEReduzida() {
+        val obraDir = tempObraDir()
+
+        // Capa autônoma (improve-import): bytes de imagem externa, sem página/OPZ de origem.
+        val coverPath = CoverStore.writeFromBytes(fs, obraDir, pngBytes(1200, 1600))
+        assertNotNull(coverPath)
+        assertTrue(fs.exists(coverPath))
+        val thumb = ImageIO.read(File(coverPath.toString()))
+        assertNotNull(thumb)
+        assertTrue(maxOf(thumb.width, thumb.height) <= 512)
+    }
 }
