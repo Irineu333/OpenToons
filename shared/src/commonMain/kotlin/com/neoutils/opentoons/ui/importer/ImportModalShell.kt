@@ -1,6 +1,7 @@
 package com.neoutils.opentoons.ui.importer
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -12,6 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -55,13 +59,22 @@ fun BottomSheetShell(
     }
 }
 
-/** Shell desktop: `Dialog` centralizado (comportamento anterior), dispensável conforme o estado. */
+/**
+ * Shell desktop: `Dialog` centralizado (comportamento anterior), dispensável conforme o estado.
+ * A altura é limitada a 90% da janela — o `ModalBottomSheet` faz isso sozinho, o `Dialog` não.
+ */
 @Composable
 fun DialogShell(
     dismissable: Boolean,
     onDismiss: () -> Unit,
     content: @Composable () -> Unit,
 ) {
+    // Medido fora do `Dialog`: lá dentro `containerSize` é a janela do próprio dialog, que se
+    // dimensiona pelo conteúdo — limitar por ela seria circular.
+    val windowHeight = LocalWindowInfo.current.containerSize.height
+    val maxHeight = with(LocalDensity.current) {
+        if (windowHeight > 0) (windowHeight * 0.9f).toDp() else Dp.Unspecified
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -72,7 +85,7 @@ fun DialogShell(
         Surface(
             shape = RoundedCornerShape(16.dp),
             tonalElevation = 6.dp,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().heightIn(max = maxHeight),
         ) {
             content()
         }

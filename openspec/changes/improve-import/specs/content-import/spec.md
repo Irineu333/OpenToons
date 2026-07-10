@@ -77,6 +77,16 @@ quando for imagem externa, SHALL registrar a capa como externa (sem referência 
 - **THEN** a `cover.webp` SHALL ser gerada a partir dessa imagem e o `work.json` SHALL registrar
   a capa como externa (sem referência de página), permanecendo a obra válida e a capa autônoma
 
+#### Scenario: Formatos aceitos para capa externa
+- **WHEN** o usuário abre o seletor de capa externa
+- **THEN** o sistema SHALL aceitar os formatos de imagem comuns em todas as plataformas,
+  **incluindo `webp`** (o próprio formato da capa gerada pelo app), além de `png` e `jpeg`
+
+#### Scenario: Imagem de capa ilegível não falha em silêncio
+- **WHEN** a imagem externa escolhida não pode ser decodificada
+- **THEN** o sistema SHALL informar o usuário e manter a capa anterior, sem materializar a obra
+  nem ignorar a escolha silenciosamente
+
 ### Requirement: Manifesto de obra em disco
 
 No import de uma **nova obra**, o sistema SHALL escrever um manifesto de obra

@@ -35,4 +35,8 @@ actual object CoverEncoder {
             out.toByteArray()
         }
     }
+
+    actual fun isDecodable(source: ByteArray): Boolean = runCatching {
+        ByteArrayInputStream(source).use { ImageIO.read(it) }
+    }.getOrNull() != null
 }

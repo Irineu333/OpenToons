@@ -3,6 +3,7 @@ package com.neoutils.opentoons
 import com.neoutils.opentoons.data.local.opz.OpzReader
 import com.neoutils.opentoons.data.local.opz.OpzWriter
 import com.neoutils.opentoons.data.local.work.CoverStore
+import com.neoutils.opentoons.util.CoverEncoder
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
@@ -11,8 +12,11 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.imageio.ImageIO
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -72,5 +76,45 @@ class CoverStoreJvmTest {
         val thumb = ImageIO.read(File(coverPath.toString()))
         assertNotNull(thumb)
         assertTrue(maxOf(thumb.width, thumb.height) <= 512)
+    }
+
+    @Test
+    fun writeFromBytes_imagemIlegivel_naoGravaCapa() {
+        val obraDir = tempObraDir()
+
+        // Nada é gravado: quem escolheu a imagem precisa ser avisado, não ficar sem capa em silêncio.
+        assertNull(CoverStore.writeFromBytes(fs, obraDir, "isto não é uma imagem".encodeToByteArray()))
+        assertFalse(fs.exists(CoverStore.pathIn(obraDir)))
+    }
+
+    @Test
+    fun writeEncoded_gravaOsBytesIntactos_semReencodar() {
+        val obraDir = tempObraDir()
+
+        // A capa externa chega já reduzida pelo CoverEncoder na revisão: gravar de novo pelo
+        // encoder só degradaria a imagem. Os bytes em disco são exatamente os recebidos.
+        val thumbnail = CoverEncoder.encodeThumbnail(pngBytes(1200, 1600))
+        assertNotNull(thumbnail)
+        val coverPath = CoverStore.writeEncoded(fs, obraDir, thumbnail)
+        assertNotNull(coverPath)
+        assertContentEquals(thumbnail, fs.read(coverPath) { readByteArray() })
+    }
+
+    @Test
+    fun writeEncoded_imagemIlegivel_naoGravaCapa() {
+        val obraDir = tempObraDir()
+
+        // Grava direto, mas não às cegas: bytes que não decodificam não viram capa.
+        assertNull(CoverStore.writeEncoded(fs, obraDir, "isto não é uma imagem".encodeToByteArray()))
+        assertFalse(fs.exists(CoverStore.pathIn(obraDir)))
+    }
+
+    @Test
+    fun imageIO_temReaderWebp_noDesktop() {
+        // Bug improve-import: escolher uma capa `.webp` "não fazia nada" no desktop porque o
+        // ImageIO padrão não tem reader de webp. O plugin TwelveMonkeys registra um via
+        // ServiceLoader — sem ele, `CoverEncoder.encodeThumbnail(webp)` devolveria null.
+        assertTrue(ImageIO.getImageReadersBySuffix("webp").hasNext(), "sem reader webp no ImageIO")
+        assertTrue(ImageIO.getImageReadersByFormatName("webp").hasNext(), "sem reader webp por formato")
     }
 }

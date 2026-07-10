@@ -42,4 +42,11 @@ actual object CoverEncoder {
             out.toByteArray()
         }
     }
+
+    actual fun isDecodable(source: ByteArray): Boolean {
+        if (source.isEmpty()) return false
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(source, 0, source.size, bounds)
+        return bounds.outWidth > 0 && bounds.outHeight > 0
+    }
 }

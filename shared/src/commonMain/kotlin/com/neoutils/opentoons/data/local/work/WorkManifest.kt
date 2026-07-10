@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 /**
  * Manifesto de obra (`work.json`, design D2) — espelho local da camada `obra.meta` do
  * ADR-0003 e **fonte de verdade dos dados intrínsecos da obra**: `title`, `direction`
- * detectada e qual página é a capa. Vive em `obras/{obraId}/work.json`, ao lado dos `.opz`
- * dos capítulos (sidecar, D1).
+ * detectada e a **proveniência** da capa (de onde ela veio — a capa em si é a `cover.webp`
+ * autônoma). Vive em `obras/{obraId}/work.json`, ao lado dos `.opz` dos capítulos (sidecar, D1).
  *
  * Campos assinados (`chavePublicador`, assinatura, `seq`) ficam **previstos e nulos** neste
  * marco — assinatura é Marco 2. Forward-compatible: no Marco 2, `cover` passa a referenciar

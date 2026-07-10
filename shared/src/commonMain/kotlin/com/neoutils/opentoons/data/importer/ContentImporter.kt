@@ -155,7 +155,12 @@ class ContentImporter(
         // Capa autônoma (improve-import): materializa a `cover.webp` a partir da fonte escolhida —
         // página da obra (default) ou imagem externa — e registra a proveniência no `work.json`.
         onProgress("Gerando capa…")
-        val (cover, coverPath) = materializeCover(edits.cover, obraDir, results)
+        val (cover, coverPath) = try {
+            materializeCover(edits.cover, obraDir, results)
+        } catch (e: Throwable) {
+            runCatching { FileSystem.SYSTEM.deleteRecursively(obraDir, mustExist = false) }
+            throw e
+        }
 
         // `work.json` **antes** do banco (D6): evita órfãos e é a fonte de verdade do dado.
         onProgress("Gravando manifesto…")
@@ -190,8 +195,12 @@ class ContentImporter(
     /**
      * Materializa a capa da obra e devolve o par (proveniência p/ `work.json`, caminho da
      * `cover.webp`). A `cover.webp` é gerada a partir dos **bytes da fonte escolhida**: uma imagem
-     * externa (grava direto), ou a página escolhida (extrai do OPZ). Se a escolha for inválida ou
-     * ausente, cai na **1ª página materializada** (default). Nenhuma página é transcodificada.
+     * externa (grava direto, já reduzida na revisão), ou a página escolhida (extrai do OPZ e
+     * reduz). Se a escolha for inválida ou ausente, cai na **1ª página materializada** (default).
+     * Nenhuma página é transcodificada.
+     *
+     * Uma imagem externa ilegível **falha o import** em vez de materializar a obra sem a capa que o
+     * usuário escolheu; a capa de página cai no default porque a obra existe mesmo sem thumbnail.
      */
     private fun materializeCover(
         choice: CoverChoice?,
@@ -201,8 +210,9 @@ class ContentImporter(
         val fs = FileSystem.SYSTEM
         when (choice) {
             is CoverChoice.External -> {
-                val path = CoverStore.writeFromBytes(fs, obraDir, choice.bytes)?.toString()
-                return (if (path != null) WorkCover.external() else null) to path
+                val path = CoverStore.writeEncoded(fs, obraDir, choice.bytes)?.toString()
+                    ?: throw IllegalArgumentException("Não foi possível ler a imagem escolhida como capa.")
+                return WorkCover.external() to path
             }
             is CoverChoice.Page -> {
                 val opz = results.firstOrNull { it.first.id == choice.chapterId }?.first?.archivePath
@@ -480,6 +490,8 @@ data class ImportDraft(
  */
 sealed interface CoverChoice {
     data class Page(val chapterId: String, val entryName: String) : CoverChoice
+
+    /** [bytes] são a thumbnail **já reduzida** pelo `CoverEncoder` na revisão — gravada como está. */
     class External(val bytes: ByteArray) : CoverChoice
 }
 

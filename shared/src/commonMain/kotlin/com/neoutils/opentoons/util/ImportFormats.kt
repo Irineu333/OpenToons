@@ -23,6 +23,14 @@ object ImportFormats {
         if (rarImportSupported) add("cbr")
     }
 
+    /**
+     * Imagens aceitas como **capa externa** na revisão (improve-import). Usamos
+     * `FileKitType.File(coverImages)` em vez de `FileKitType.Image` porque o picker de galeria
+     * nativo filtra por um conjunto fixo de tipos que, em algumas plataformas, **exclui webp** —
+     * e webp é justamente o formato da capa gerada pelo app.
+     */
+    val coverImages: List<String> = listOf("webp", "png", "jpg", "jpeg", "gif", "bmp")
+
     /** Rótulo legível dos formatos de biblioteca, ex.: "CBZ, ZIP, CBR ou RAR" (ou "CBZ ou ZIP"). */
     val libraryLabel: String = label(library)
 

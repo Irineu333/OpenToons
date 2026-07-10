@@ -78,6 +78,9 @@ kotlin {
         // `unarr`): o `actual` iOS recusa RAR por design — comportamento final, não fallback.
         jvmMain.dependencies {
             implementation(libs.junrar)
+            // Desktop: ImageIO não decodifica webp por padrão. Este reader (auto-registrado via
+            // ServiceLoader) permite escolher uma capa externa `.webp` na revisão (improve-import).
+            implementation(libs.twelvemonkeys.imageio.webp)
         }
         androidMain.dependencies {
             implementation(libs.junrar)

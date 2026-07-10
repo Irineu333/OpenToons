@@ -1,11 +1,13 @@
 package com.neoutils.opentoons.ui.importer
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,19 +15,21 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -34,42 +38,40 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.neoutils.opentoons.data.importer.CoverCandidate
 import com.neoutils.opentoons.data.importer.CoverChoice
-import com.neoutils.opentoons.data.importer.ImportDraft
-import com.neoutils.opentoons.data.importer.ImportEdits
 import com.neoutils.opentoons.domain.model.ThumbnailImage
-import com.neoutils.opentoons.util.CoverEncoder
+import com.neoutils.opentoons.ui.icons.AppIcons
+import com.neoutils.opentoons.util.ImportFormats
+import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
-import io.github.vinceglb.filekit.readBytes
-import kotlinx.coroutines.launch
+
+/** Raio dos campos e das células de capa — arredondamento sutil, alinhado ao do shell (16.dp). */
+private val FieldShape = RoundedCornerShape(8.dp)
 
 /**
- * Modal de import (improve-import): dono do fluxo de revisão de metadados, isolado da biblioteca.
- * O **shell** é escolhido por plataforma — `ModalBottomSheet` no mobile, `Dialog` no desktop
- * ([ImportModalShell]) — e o miolo ([ImportContent]) é 100% compartilhado. Fechado (`Hidden`) não
- * desenha nada. Durante o processamento o modal não é dispensável (evita cancelar a meio de um save).
+ * Modal de import: o shell é escolhido por plataforma ([ImportModalShell]) e o miolo é
+ * compartilhado. Durante o processamento o modal não é dispensável (evita cancelar a meio de um
+ * save). Fechado (`Hidden`) não desenha nada.
+ *
+ * O erro de capa ilegível ganha um shell próprio **irmão** (não aninhado) do da revisão: fechá-lo
+ * devolve o usuário ao formulário com a capa anterior intacta.
  */
 @Composable
 fun ImportDialog(viewModel: ImportViewModel) {
@@ -77,30 +79,48 @@ fun ImportDialog(viewModel: ImportViewModel) {
     val current = state
     if (current is ImportUiState.Hidden) return
 
-    val dismissable = current is ImportUiState.Reviewing || current is ImportUiState.Error
     ImportModalShell(
-        dismissable = dismissable,
-        onDismiss = { viewModel.cancel() },
+        dismissable = current is ImportUiState.Reviewing || current is ImportUiState.Error,
+        onDismiss = viewModel::cancel,
     ) {
-        ImportContent(
-            state = current,
-            onCancel = { viewModel.cancel() },
-            onConfirm = { edits -> viewModel.confirm(edits) },
-        )
+        ImportContent(current, viewModel)
+    }
+
+    val coverError = (current as? ImportUiState.Reviewing)?.form?.coverError
+    if (coverError != null) {
+        // Segundo `ImportModalShell` (no mobile, um sheet sobre o outro) em vez de um `AlertDialog`:
+        // o aviso precisa ser o mesmo shell da plataforma que a revisão — dialog no desktop, sheet
+        // no mobile — senão um `Dialog` sobre o bottom sheet quebra os insets de IME do sheet de trás.
+        ImportModalShell(dismissable = true, onDismiss = viewModel::dismissCoverError) {
+            MessageContent(
+                title = "Não foi possível usar essa imagem",
+                message = coverError,
+                onDismiss = viewModel::dismissCoverError,
+            )
+        }
     }
 }
 
-/** Miolo do modal (independente do shell): despacha por estado. */
 @Composable
-private fun ImportContent(
-    state: ImportUiState,
-    onCancel: () -> Unit,
-    onConfirm: (ImportEdits) -> Unit,
-) {
+private fun ImportContent(state: ImportUiState, viewModel: ImportViewModel) {
     when (state) {
         is ImportUiState.Loading -> LoadingContent(state.message)
-        is ImportUiState.Reviewing -> ReviewContent(state.draft, onCancel, onConfirm)
-        is ImportUiState.Error -> ErrorContent(state.message, onCancel)
+        is ImportUiState.Reviewing -> ReviewContent(
+            form = state.form,
+            onTitleChange = viewModel::updateTitle,
+            onDescriptionChange = viewModel::updateDescription,
+            onSelectPage = viewModel::selectPageCover,
+            onSelectExternal = viewModel::selectExternalCover,
+            onLoadExternal = viewModel::loadExternalCover,
+            onCancel = viewModel::cancel,
+            onConfirm = viewModel::confirm,
+        )
+
+        is ImportUiState.Error -> MessageContent(
+            title = "Não foi possível importar",
+            message = state.message,
+            onDismiss = viewModel::cancel,
+        )
         ImportUiState.Hidden -> Unit
     }
 }
@@ -117,10 +137,11 @@ private fun LoadingContent(message: String) {
     }
 }
 
+/** Mensagem de falha com um único botão de saída — serve ao erro do import e ao da capa. */
 @Composable
-private fun ErrorContent(message: String, onDismiss: () -> Unit) {
+private fun MessageContent(title: String, message: String, onDismiss: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(24.dp)) {
-        Text("Não foi possível importar", style = MaterialTheme.typography.titleMedium)
+        Text(title, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Text(message, color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(16.dp))
@@ -131,51 +152,31 @@ private fun ErrorContent(message: String, onDismiss: () -> Unit) {
 }
 
 /**
- * Revisão de metadados antes de materializar: nome, descrição e capa editáveis. Layout de 3 faixas
- * — **header fixo · conteúdo rolável · footer fixo** — de modo que as ações (Cancelar/Importar)
- * nunca são empurradas para fora em telas pequenas; `imePadding` mantém o footer acima do teclado.
- * Tocar em qualquer área fora dos campos baixa o teclado (essencial no iOS, sem botão de sistema).
- *
- * A capa pode vir das **páginas da própria obra** (1ª de cada capítulo) **ou** de uma **imagem
- * externa** (célula "+" à direita), preenchendo o mesmo slot autônomo — para CBZ sem capa própria.
+ * Revisão de metadados antes de materializar. Layout de 3 faixas — header fixo, conteúdo rolável,
+ * footer fixo — para que as ações nunca sejam empurradas para fora em telas pequenas; `imePadding`
+ * mantém o footer acima do teclado. Tocar fora dos campos baixa o teclado (no iOS não há botão de
+ * sistema para isso). A capa vem de uma página da obra ou de uma imagem externa.
  */
 @Composable
 private fun ReviewContent(
-    draft: ImportDraft,
+    form: ImportForm,
+    onTitleChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onSelectPage: (CoverCandidate) -> Unit,
+    onSelectExternal: () -> Unit,
+    onLoadExternal: (PlatformFile) -> Unit,
     onCancel: () -> Unit,
-    onConfirm: (ImportEdits) -> Unit,
+    onConfirm: () -> Unit,
 ) {
-    var title by remember(draft) { mutableStateOf(draft.defaultTitle) }
-    var description by remember(draft) { mutableStateOf("") }
-    var cover by remember(draft) { mutableStateOf(draft.defaultCover) }
-    // Thumbnail (já codificada) da imagem externa escolhida — preview na galeria e bytes do commit.
-    var externalPreview by remember(draft) { mutableStateOf<ByteArray?>(null) }
-
     val focusManager = LocalFocusManager.current
     val descriptionFocus = remember { FocusRequester() }
-    val scope = rememberCoroutineScope()
 
-    val imagePicker = rememberFilePickerLauncher(type = FileKitType.Image) { picked ->
-        picked ?: return@rememberFilePickerLauncher
-        scope.launch {
-            val thumb = CoverEncoder.encodeThumbnail(picked.readBytes()) ?: return@launch
-            externalPreview = thumb
-            cover = CoverChoice.External(thumb)
-        }
-    }
+    val imagePicker = rememberFilePickerLauncher(
+        type = FileKitType.File(ImportFormats.coverImages),
+    ) { picked -> picked?.let(onLoadExternal) }
 
-    // Teto = ~90% da tela; conteúdo cede espaço (weight fill=false) e rola quando estoura.
-    val windowHeight = LocalWindowInfo.current.containerSize.height
-    val maxHeight = with(LocalDensity.current) {
-        if (windowHeight > 0) (windowHeight * 0.9f).toDp() else Dp.Unspecified
-    }
-
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(max = maxHeight)
-            .imePadding(),
-    ) {
+    // Sem altura própria: quem limita o modal à tela é o shell (sheet no mobile, dialog no desktop).
+    Column(Modifier.fillMaxWidth().imePadding()) {
         Text(
             "Revisar import",
             style = MaterialTheme.typography.titleLarge,
@@ -186,25 +187,26 @@ private fun ReviewContent(
             Modifier
                 .weight(1f, fill = false)
                 .verticalScroll(rememberScrollState())
-                // Tocar fora dos campos baixa o teclado (sem fechar o modal).
                 .pointerInput(Unit) { detectTapGestures { focusManager.clearFocus() } }
                 .padding(horizontal = 24.dp),
         ) {
             OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
+                value = form.title,
+                onValueChange = onTitleChange,
                 label = { Text("Nome da obra") },
                 singleLine = true,
+                shape = FieldShape,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { descriptionFocus.requestFocus() }),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
+                value = form.description,
+                onValueChange = onDescriptionChange,
                 label = { Text("Descrição (opcional)") },
                 minLines = 3,
+                shape = FieldShape,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 modifier = Modifier.fillMaxWidth().focusRequester(descriptionFocus),
@@ -214,67 +216,148 @@ private fun ReviewContent(
             Text("Capa", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(draft.coverCandidates, key = { it.chapterId }) { candidate ->
-                    val selected = (cover as? CoverChoice.Page)?.chapterId == candidate.chapterId
+                items(form.candidates, key = { it.chapterId }) { candidate ->
                     CoverCandidateCell(
                         thumbnail = candidate.thumbnail,
-                        key = candidate.chapterId,
+                        cacheKey = candidate.chapterId,
                         label = candidate.chapterTitle,
-                        selected = selected,
-                        onClick = { cover = CoverChoice.Page(candidate.chapterId, candidate.entryName) },
+                        selected = (form.cover as? CoverChoice.Page)?.chapterId == candidate.chapterId,
+                        onClick = { onSelectPage(candidate) },
                     )
                 }
                 item {
                     ExternalCoverCell(
-                        preview = externalPreview,
-                        selected = cover is CoverChoice.External,
-                        onClick = { imagePicker.launch() },
+                        preview = form.externalCover,
+                        selected = form.cover is CoverChoice.External,
+                        onSelect = onSelectExternal,
+                        onPick = { imagePicker.launch() },
                     )
                 }
             }
         }
 
         Row(
-            Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    vertical = 8.dp,
+                    horizontal = 24.dp,
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
                 Text("Cancelar")
             }
-            Button(
-                onClick = { onConfirm(ImportEdits(title = title, description = description, cover = cover)) },
-                modifier = Modifier.weight(1f),
-            ) {
+            Button(onClick = onConfirm, modifier = Modifier.weight(1f)) {
                 Text("Importar")
             }
         }
     }
 }
 
-/** Célula da galeria de capa: thumbnail (de página ou externa) + destaque quando selecionada. */
 @Composable
 private fun CoverCandidateCell(
     thumbnail: ByteArray?,
-    key: String,
+    cacheKey: String,
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+) {
+    CoverCell(label = label, selected = selected, onClick = onClick) {
+        if (thumbnail != null) {
+            AsyncImage(
+                model = ThumbnailImage(key = cacheKey, bytes = thumbnail),
+                contentDescription = label,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxSize()) {}
+        }
+    }
+}
+
+/**
+ * Célula de imagem externa. Sem imagem, o card inteiro abre o seletor. Com imagem, o card apenas
+ * **seleciona** a capa e a troca fica no botão do canto superior direito — clicar no card para
+ * escolher a imagem já carregada não deve reabrir o seletor.
+ */
+@Composable
+private fun ExternalCoverCell(
+    preview: ByteArray?,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onPick: () -> Unit,
+) {
+    CoverCell(
+        label = "Imagem",
+        selected = selected,
+        onClick = if (preview != null) onSelect else onPick,
+    ) {
+        if (preview != null) {
+            // Key derivada do conteúdo: com key fixa o Coil serviria a imagem anterior do cache.
+            val cacheKey = remember(preview) { "external-cover-${preview.contentHashCode()}" }
+            AsyncImage(
+                model = ThumbnailImage(key = cacheKey, bytes = preview),
+                contentDescription = "Capa externa",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(onClick = onPick)
+                    .padding(4.dp),
+            ) {
+                Icon(
+                    imageVector = AppIcons.Edit,
+                    contentDescription = "Trocar imagem",
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "+",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** Célula da galeria de capa: moldura com aspecto de capa, borda de seleção, clique e rótulo. */
+@Composable
+private fun CoverCell(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    thumbnail: @Composable BoxScope.() -> Unit,
 ) {
     Column(
         Modifier.width(96.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CoverThumbBox(selected = selected, onClick = onClick) {
-            if (thumbnail != null) {
-                AsyncImage(
-                    model = ThumbnailImage(key = key, bytes = thumbnail),
-                    contentDescription = label,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.7f)
+                .clip(FieldShape)
+                .border(
+                    border = BorderStroke(
+                        width = if (selected) 3.dp else 1.dp,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    shape = FieldShape,
                 )
-            } else {
-                Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxSize()) {}
-            }
+                .clickable(onClick = onClick),
+        ) {
+            thumbnail()
         }
         Text(
             label,
@@ -283,72 +366,5 @@ private fun CoverCandidateCell(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 4.dp),
         )
-    }
-}
-
-/** Célula de **imagem externa**: mostra o preview escolhido, ou um "+" para abrir o seletor. */
-@Composable
-private fun ExternalCoverCell(
-    preview: ByteArray?,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Column(
-        Modifier.width(96.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        CoverThumbBox(selected = selected, onClick = onClick) {
-            if (preview != null) {
-                AsyncImage(
-                    model = ThumbnailImage(key = "external-cover", bytes = preview),
-                    contentDescription = "Capa externa",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "+",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-        Text(
-            "Imagem",
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-}
-
-/** Moldura comum das células de capa: aspecto de capa, borda de seleção e clique. */
-@Composable
-private fun CoverThumbBox(
-    selected: Boolean,
-    onClick: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .aspectRatio(0.7f)
-            .clip(RoundedCornerShape(8.dp))
-            .border(
-                border = BorderStroke(
-                    width = if (selected) 3.dp else 1.dp,
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                ),
-                shape = RoundedCornerShape(8.dp),
-            )
-            .clickable(onClick = onClick),
-    ) {
-        content()
     }
 }

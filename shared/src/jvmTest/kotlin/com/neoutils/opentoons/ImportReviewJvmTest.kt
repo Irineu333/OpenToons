@@ -27,6 +27,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -181,5 +182,26 @@ class ImportReviewJvmTest {
         assertNull(manifest.cover?.entryName)
         // cover.webp foi gerada a partir dos bytes externos.
         assertTrue(fs.exists(CoverStore.pathIn(obraDir)))
+    }
+
+    @Test
+    fun commit_comImagemExternaIlegivel_falhaSemMaterializar() = runBlocking {
+        val importer = newImporter()
+        val draft = importer.prepare(sourceCbz())
+        val antes = obrasDir.list()?.size ?: 0
+
+        // A escolha do usuário não pode ser ignorada em silêncio: sem capa legível, sem obra.
+        assertFailsWith<IllegalArgumentException> {
+            importer.commit(
+                draft,
+                ImportEdits(
+                    title = "Capa Quebrada",
+                    description = "",
+                    cover = CoverChoice.External("isto não é uma imagem".encodeToByteArray()),
+                ),
+            )
+        }
+        assertEquals(antes, obrasDir.list()?.size ?: 0, "obra materializada apesar da falha")
+        assertFalse(File(draft.sourceTempPath).exists())
     }
 }

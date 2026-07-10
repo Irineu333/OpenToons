@@ -87,4 +87,26 @@ class WorkManifestJvmTest {
         assertEquals("cap-1", read.cover?.chapterId)
         assertEquals("001.jpg", read.cover?.entryName)
     }
+
+    @Test
+    fun capaExterna_roundtrip_semReferenciaDePagina() {
+        val obraDir = tempObraDir()
+        WorkManifestStore.write(
+            FileSystem.SYSTEM,
+            obraDir,
+            WorkManifest(
+                obraId = "obra-2",
+                title = "Capa Externa",
+                direction = "LTR",
+                cover = WorkCover.external(),
+            ),
+        )
+
+        val read = WorkManifestStore.read(FileSystem.SYSTEM, obraDir)
+        assertNotNull(read)
+        // A capa é autônoma: proveniência externa não carrega {chapterId, entryName}.
+        assertEquals(CoverSource.EXTERNAL, read.cover?.source)
+        assertNull(read.cover?.chapterId)
+        assertNull(read.cover?.entryName)
+    }
 }

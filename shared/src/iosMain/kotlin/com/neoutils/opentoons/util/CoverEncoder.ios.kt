@@ -48,4 +48,12 @@ actual object CoverEncoder {
         out.usePinned { pinned -> memcpy(pinned.addressOf(0), jpeg.bytes, jpeg.length) }
         return out
     }
+
+    actual fun isDecodable(source: ByteArray): Boolean {
+        if (source.isEmpty()) return false
+        val data = source.usePinned { pinned ->
+            NSData.create(bytes = pinned.addressOf(0), length = source.size.toULong())
+        }
+        return UIImage.imageWithData(data) != null
+    }
 }

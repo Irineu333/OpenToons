@@ -28,9 +28,13 @@ Nenhum source set novo no Gradle; nenhum código de layout duplicado; os `actual
 
 **Layout de 3 faixas** (mata o botão sumido, tanto no sheet quanto no dialog):
 
+A **altura** é responsabilidade do shell, não do miolo: o `ModalBottomSheet` se limita à tela por
+conta própria e o `DialogShell` aplica `heightIn(max = 90%)` medindo a janela **antes** de entrar no
+`Dialog` (lá dentro, `containerSize` é a do próprio dialog, que se dimensiona pelo conteúdo).
+
 ```
-Container( .fillMaxWidth().heightIn(max = ~90% da tela).imePadding() )
- └─ Column
+Shell( altura ≤ ~90% da tela )
+ └─ Column( .fillMaxWidth().imePadding() )
      ├─ Header  "Revisar import"                (fixo)
      ├─ Content Modifier.weight(1f).verticalScroll   ← só isto cede espaço e rola
      │    campos + galeria de capa
