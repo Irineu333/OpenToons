@@ -11,14 +11,22 @@ import kotlin.math.abs
 
 /**
  * `actual` desktop (tasks 7.3–7.4): intercepta a rolagem no *pass* inicial (antes da
- * `LazyColumn`), e **só para roda discreta** aplica um delta amplificado via
- * [ScrollableState.dispatchRawDelta] e consome o evento. Trackpad/gestos de precisão (delta
- * fracionário de alta frequência) passam intocados para o tratamento padrão.
+ * `LazyColumn`) e, **só para roda discreta**, rola uma fração do viewport por notch via
+ * [ScrollableState.dispatchRawDelta], consumindo o evento. Trackpad/gestos de precisão passam
+ * intocados para o tratamento padrão (não são amplificados).
  *
- * A discriminação usa o evento AWT: `MouseWheelEvent` com `scrollType == WHEEL_UNIT_SCROLL` e
- * `preciseWheelRotation` **inteiro** (≈ `wheelRotation`) é uma roda; rotação fracionária é
- * trackpad. [WHEEL_STEP_PX] e [AMPLIFY] são provisórios — o valor definitivo sai do spike
- * (task 7.2).
+ * **Discriminação (roda vs trackpad), calibrada pelo spike (task 7.1):** um `MouseWheelEvent`
+ * de roda tem `preciseWheelRotation` **inteiro exato** (1.0, 2.0, …); o trackpad emite rajadas
+ * de inércia com rotação fracionária (0.1, 0.94, 3.58, …) — inclusive a cauda logo abaixo de um
+ * inteiro (−0.9998). O teste por **truncação** (`precise.toLong()`) separa os dois: `−0.9998`
+ * trunca para `0` (rejeitado), `−1.0` para `−1` (aceito). Medido em 338 eventos reais de
+ * trackpad: **zero falsos positivos**.
+ *
+ * **Amplificação (task 7.2):** o Compose Desktop entrega um delta constante em px por notch,
+ * indiferente ao tamanho dos itens — atravessar um capítulo custa centenas de notches. Em vez
+ * de multiplicar esse delta (cuja escala varia por SO), rola-se [NOTCH_VIEWPORT_FRACTION] da
+ * **altura do viewport** por notch (×nº de notches num giro rápido). É proporcional ao viewport
+ * (opção do design), independente da escala de px-por-linha da plataforma, e afeta apenas a roda.
  */
 actual fun Modifier.wheelScrollBoost(state: ScrollableState): Modifier = this.pointerInput(state) {
     awaitPointerEventScope {
@@ -26,23 +34,30 @@ actual fun Modifier.wheelScrollBoost(state: ScrollableState): Modifier = this.po
             val event = awaitPointerEvent(PointerEventPass.Initial)
             if (event.type != PointerEventType.Scroll) continue
             val wheel = event.awtEventOrNull as? MouseWheelEvent ?: continue
-            if (!isDiscreteWheel(wheel)) continue
-            val delta = event.changes.firstOrNull()?.scrollDelta?.y ?: continue
-            if (delta == 0f) continue
-            state.dispatchRawDelta(delta * WHEEL_STEP_PX * AMPLIFY)
+            val notches = discreteNotchesOrZero(wheel)
+            if (notches == 0) continue // trackpad/precisão → tratamento padrão
+            state.dispatchRawDelta(notches * size.height * NOTCH_VIEWPORT_FRACTION)
             event.changes.forEach { it.consume() }
         }
     }
 }
 
-// Roda discreta: rotação de precisão praticamente inteira. Trackpad emite frações.
-private fun isDiscreteWheel(e: MouseWheelEvent): Boolean {
+/**
+ * Nº de notches (com sinal) se o evento for de **roda discreta**; `0` para trackpad/precisão.
+ * Roda ⇒ `preciseWheelRotation` inteiro exato: a parte truncada coincide com a precisa.
+ */
+private fun discreteNotchesOrZero(e: MouseWheelEvent): Int {
     val precise = e.preciseWheelRotation
-    return abs(precise - precise.toLong().toDouble()) < 1e-3 && precise != 0.0
+    val truncated = precise.toLong()
+    return if (truncated != 0L && abs(precise - truncated.toDouble()) < INTEGER_EPS) {
+        truncated.toInt()
+    } else {
+        0
+    }
 }
 
-/** Passo em px por unidade de delta de roda (provisório — a fixar pelo spike, task 7.2). */
-private const val WHEEL_STEP_PX = 64f
+/** Fração da altura do viewport rolada por notch (≈4 notches por tela). */
+private const val NOTCH_VIEWPORT_FRACTION = 0.25f
 
-/** Fator de amplificação da roda discreta (provisório — a fixar pelo spike, task 7.2). */
-private const val AMPLIFY = 3f
+/** Tolerância para considerar `preciseWheelRotation` inteiro (roda) e não fracionário (trackpad). */
+private const val INTEGER_EPS = 1e-3

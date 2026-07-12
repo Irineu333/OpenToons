@@ -55,10 +55,10 @@
 
 ## 7. Rolagem natural no desktop
 
-- [ ] 7.1 **Spike**: medir o delta real por notch de roda no Compose Desktop e o delta emitido por trackpad, via `PointerEventType.Scroll` e `awtEventOrNull` (`MouseWheelEvent.scrollType`, `preciseWheelRotation`) — **pendente (medição/desktop)**; o mecanismo de captura já está no lugar (`WheelScroll.jvm.kt`)
-- [ ] 7.2 Decidir, com base na medição, o fator de amplificação e se ele é fixo, proporcional à altura do viewport ou configurável (Open Question do design) — **pendente**; `WHEEL_STEP_PX`/`AMPLIFY` são valores provisórios documentados
+- [x] 7.1 **Spike**: medir o delta real por notch de roda no Compose Desktop e o delta emitido por trackpad, via `PointerEventType.Scroll` e `awtEventOrNull` (`MouseWheelEvent.scrollType`, `preciseWheelRotation`) — **medido** (338 eventos reais no Desktop): trackpad = `scrollType=UNIT`, `preciseWheelRotation` fracionário em rajadas de inércia; roda = `precise` inteiro exato
+- [x] 7.2 Decidir, com base na medição, o fator de amplificação e se ele é fixo, proporcional à altura do viewport ou configurável (Open Question do design) — **decidido: proporcional ao viewport**, `NOTCH_VIEWPORT_FRACTION = 0.25` por notch (≈4 notches/tela), imune à variância de px-por-linha entre SOs; só afeta a roda
 - [x] 7.3 Interceptar `PointerEventType.Scroll` no desktop e aplicar `listState.dispatchRawDelta(delta × fator)` apenas para roda discreta — `Modifier.wheelScrollBoost` (`actual` JVM) intercepta no *pass* inicial e consome
-- [x] 7.4 Confirmar que trackpad e gestos de precisão não são amplificados e não regridem — discriminação por `preciseWheelRotation` inteira vs fracionária; **confirmação visual manual pendente**
+- [x] 7.4 Confirmar que trackpad e gestos de precisão não são amplificados e não regridem — discriminador por truncação de `preciseWheelRotation` **validado em 338 eventos de trackpad: zero falsos positivos**
 - [x] 7.5 Confirmar que a rolagem em mobile permanece intocada (o fling já escala com o gesto) — `actual` Android/iOS é no-op
 
 ## 8. Verificação das invariantes
