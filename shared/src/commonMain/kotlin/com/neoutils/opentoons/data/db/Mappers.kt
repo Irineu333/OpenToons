@@ -36,6 +36,7 @@ fun ChapterEntity.toDomain(read: Boolean): Chapter = Chapter(
 fun ProgressEntity.toDomain(): ChapterProgress = ChapterProgress(
     chapterId = chapterId,
     pageIndex = pageIndex,
+    fractionWithinPage = fractionWithinPage,
     scrollFraction = scrollFraction,
     completed = completed,
     updatedAt = updatedAt,

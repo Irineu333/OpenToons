@@ -45,19 +45,32 @@ data class Chapter(
     val read: Boolean = false,
 )
 
-/** Página dentro de um capítulo, na ordem natural das entradas (spec content-import). */
+/**
+ * Página dentro de um capítulo, na ordem natural das entradas (spec content-import). As
+ * dimensões nativas (`width`/`height`, em px) vêm do sniff de header no open do capítulo
+ * (design D1, task 1.6) e são **dado** — a base da geometria do long strip (tiles de altura
+ * fixa). `0` significa desconhecida (formato não coberto pelo sniff): o layout cai num
+ * fallback de proporção típica.
+ */
 data class Page(
     val index: Int,
     val entryName: String,
+    val width: Int = 0,
+    val height: Int = 0,
 )
 
 /**
- * Progresso persistido por capítulo (spec reading-experience / offline-library):
- * `pageIndex` no paginado, `scrollFraction` no long strip.
+ * Progresso persistido por capítulo (spec reading-experience / offline-library). No paginado é
+ * `pageIndex`; no long strip passa a ser **posição independente de layout** (design D4):
+ * `(pageIndex, fractionWithinPage)`, estável a rotação e troca de dispositivo — reconstruir px
+ * a partir do par é trivial em qualquer largura. `scrollFraction` é **legado** (a fração de
+ * rolagem sobre a altura total, que mudava de significado com a largura); mantido só para
+ * converter progresso antigo por aproximação (task 4.2).
  */
 data class ChapterProgress(
     val chapterId: String,
     val pageIndex: Int = 0,
+    val fractionWithinPage: Float = 0f,
     val scrollFraction: Float = 0f,
     val completed: Boolean = false,
     val updatedAt: Long = 0L,

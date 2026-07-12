@@ -9,10 +9,10 @@ import com.neoutils.opentoons.util.ioDispatcher
 
 @Database(
     entities = [WorkEntity::class, ChapterEntity::class, ProgressEntity::class],
-    // v5: `WorkEntity` ganha `description` (edit-import-metadata) — dado editável no import,
-    // espelho do work.json. Pré-release, sem dados a preservar → recriação destrutiva
-    // (D8, ver `buildDatabase`; precedente da v4 e da task 9.14 do Marco 1).
-    version = 5,
+    // v6: `progress` ganha `fractionWithinPage` para a posição independente de layout do long
+    // strip (design D4, task 4.1). Migração **preservadora** (ver `MIGRATION_5_6`), não mais
+    // destrutiva — a v5 adicionou `description` ao `WorkEntity`.
+    version = 6,
     exportSchema = true,
 )
 @ConstructedBy(OpenToonsDatabaseConstructor::class)
@@ -36,7 +36,9 @@ fun buildDatabase(builder: RoomDatabase.Builder<OpenToonsDatabase>): OpenToonsDa
     builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(ioDispatcher)
-        // Marco 1 não tem dados a preservar: recria em qualquer divergência de schema
-        // (inclui o caso do arquivo pré-existir vazio ao abrir com o BundledSQLiteDriver).
+        // v5→v6 preserva a biblioteca ao adicionar `fractionWithinPage` (task 4.1).
+        .addMigrations(MIGRATION_5_6)
+        // Rede de segurança para divergências fora do caminho migrado (ex.: arquivo pré-existir
+        // vazio ao abrir com o BundledSQLiteDriver).
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()

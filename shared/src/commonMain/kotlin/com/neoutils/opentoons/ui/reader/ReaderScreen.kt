@@ -96,7 +96,6 @@ private fun ReaderContent(
     var chromeVisible by remember { mutableStateOf(false) }
     var currentPage by remember { mutableIntStateOf(state.initialPage) }
     var seekTarget by remember { mutableStateOf<Int?>(null) }
-    var scrollPct by remember { mutableStateOf(state.initialScroll) }
     var showSettings by remember { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
@@ -141,10 +140,13 @@ private fun ReaderContent(
             Layout.LONG_STRIP -> LongStripReader(
                 archivePath = state.chapter!!.archivePath,
                 pages = state.pages,
-                initialScroll = state.initialScroll,
-                onScrollFraction = {
-                    scrollPct = it
-                    viewModel.saveScrollProgress(it)
+                initialPage = state.initialPage,
+                initialFraction = state.initialFraction,
+                seekTarget = seekTarget,
+                onProgress = { position, atEnd ->
+                    // Rodapé segue a rolagem do long strip (task 6.2).
+                    currentPage = position.pageIndex
+                    viewModel.saveScrollProgress(position, atEnd)
                 },
                 onToggleChrome = { chromeVisible = !chromeVisible },
             )
@@ -171,10 +173,8 @@ private fun ReaderContent(
             exit = slideOutVertically(tween(180)) { it } + fadeOut(tween(180)),
         ) {
             ReaderBottomBar(
-                layout = state.layout,
                 currentPage = currentPage,
                 pageCount = state.pages.size,
-                scrollFraction = scrollPct,
                 onSeek = { seekTarget = it },
                 prevChapterId = state.prevChapterId,
                 nextChapterId = state.nextChapterId,
@@ -224,10 +224,8 @@ private fun ReaderTopBar(title: String, onBack: () -> Unit, onSettings: () -> Un
 
 @Composable
 private fun ReaderBottomBar(
-    layout: Layout,
     currentPage: Int,
     pageCount: Int,
-    scrollFraction: Float,
     onSeek: (Int) -> Unit,
     prevChapterId: String?,
     nextChapterId: String?,
@@ -242,16 +240,13 @@ private fun ReaderBottomBar(
                 )
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
-            // Progresso por modo (task 6.4): página no paginado, % no long strip.
-            val progressText = if (layout == Layout.PAGED) {
-                "${currentPage + 1}/$pageCount"
-            } else {
-                "${(scrollFraction * 100).roundToInt()}%"
-            }
+            // Progresso por página nos dois modos: o long strip agora conhece a página atual
+            // pela rolagem (task 6.2), e o slider passa a servir de seek nele também (task 6.3).
+            val progressText = "${currentPage + 1}/$pageCount"
 
-            if (layout == Layout.PAGED && pageCount > 1) {
+            if (pageCount > 1) {
                 Slider(
-                    value = currentPage.toFloat(),
+                    value = currentPage.toFloat().coerceIn(0f, (pageCount - 1).toFloat()),
                     onValueChange = { onSeek(it.roundToInt().coerceIn(0, pageCount - 1)) },
                     valueRange = 0f..(pageCount - 1).toFloat(),
                 )

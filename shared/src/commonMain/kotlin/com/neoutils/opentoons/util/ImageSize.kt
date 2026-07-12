@@ -4,8 +4,10 @@ package com.neoutils.opentoons.util
 data class ImageSize(val width: Int, val height: Int)
 
 /**
- * Lê as dimensões de uma imagem a partir dos bytes, sem manter o bitmap decodificado
- * (usa leitura de header/bounds em cada plataforma). Retorna `null` se não decodificável.
- * Base da heurística de layout (task 5.1).
+ * Lê as dimensões de uma imagem a partir dos bytes, sem decodificar o bitmap, via
+ * [ImageHeaderReader] (task 1.4). Antes eram três `actual` por plataforma que **divergiam**
+ * entre si (o iOS aplicava a orientação EXIF; JVM/Android não), gerando geometria e detecção
+ * de layout inconsistentes para o mesmo arquivo. Agora é uma leitura de header em `commonMain`,
+ * idêntica nas três plataformas. Retorna `null` para formato desconhecido/header truncado.
  */
-expect fun readImageSize(bytes: ByteArray): ImageSize?
+fun readImageSize(bytes: ByteArray): ImageSize? = ImageHeaderReader.readSize(bytes)

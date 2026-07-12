@@ -61,13 +61,17 @@ data class ChapterEntity(
 )
 
 /**
- * Progresso por capítulo (task 4.3): `pageIndex` (paginado) e `scrollFraction` (long strip);
- * `completed` é a marca de "lido". Retomar leitura e refletir lido no detalhe saem daqui.
+ * Progresso por capítulo. No paginado é `pageIndex`; no long strip é a posição independente de
+ * layout `(pageIndex, fractionWithinPage)` (design D4, task 4.1). `scrollFraction` é legado
+ * (fração de rolagem da altura total), preservado para conversão aproximada do progresso antigo
+ * (task 4.2). `completed` é a marca de "lido". A coluna `fractionWithinPage` foi adicionada na
+ * migração v5→v6 (ver `Migrations.kt`).
  */
 @Entity(tableName = "progress")
 data class ProgressEntity(
     @PrimaryKey val chapterId: String,
     val pageIndex: Int,
+    val fractionWithinPage: Float,
     val scrollFraction: Float,
     val completed: Boolean,
     val updatedAt: Long,

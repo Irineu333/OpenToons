@@ -54,4 +54,21 @@ object CbzArchive {
         val path = "/$entryName".toPath()
         return zip.read(path) { readByteArray() }
     }
+
+    /**
+     * Lê no máximo [maxBytes] do início de uma entrada — o suficiente para o sniff de header
+     * (task 1.6), sem materializar a página inteira (tiras de webtoon podem ser dezenas de MB).
+     */
+    fun readEntryHeader(archivePath: String, entryName: String, maxBytes: Int = 64 * 1024): ByteArray {
+        val zip = FileSystem.SYSTEM.openZip(archivePath.toPath())
+        val path = "/$entryName".toPath()
+        return zip.read(path) {
+            val out = okio.Buffer()
+            while (out.size < maxBytes) {
+                val n = read(out, maxBytes - out.size)
+                if (n == -1L) break
+            }
+            out.readByteArray()
+        }
+    }
 }

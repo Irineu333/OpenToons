@@ -72,6 +72,7 @@ class LibraryRepository(
             ProgressEntity(
                 chapterId = progress.chapterId,
                 pageIndex = progress.pageIndex,
+                fractionWithinPage = progress.fractionWithinPage,
                 scrollFraction = progress.scrollFraction,
                 completed = progress.completed,
                 updatedAt = progress.updatedAt,
