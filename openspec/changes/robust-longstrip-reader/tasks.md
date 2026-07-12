@@ -21,7 +21,7 @@
 
 - [x] 3.1 Reescrever `LongStripReader` para emitir um item por `Tile`, com `Modifier.height(tile.heightPx)` fixo; remover o `remember` de `aspectRatio` e o `fillParentMaxHeight()`
 - [x] 3.2 Manter, nesta etapa, o decode de página inteira (o glitch já morre aqui) — ponto de corte seguro caso a etapa 5 atrase — **superado**: o renderer já usa decode por região (etapa 5) direto; o glitch morre igual (altura fixa)
-- [ ] 3.3 Verificar I2 no app real: rolar para baixo, rolar para cima, confirmar que nenhum item muda de altura e a posição é reversível nas três plataformas — **pendente (manual/device)**; I2 é garantido por construção (altura fixa) e coberto por I6 nos testes puros
+- [x] 3.3 Verificar I2 no app real: rolar para baixo, rolar para cima, confirmar que nenhum item muda de altura e a posição é reversível nas três plataformas — **verificado nas três plataformas** (sem salto ao subir); I2 garantido por construção (altura fixa) e coberto por I6 nos testes
 - [x] 3.4 Alinhar as fronteiras de tile a pixels inteiros no espaço da fonte; conferir ausência de costura de 1 px entre tiles adjacentes (risco de filtragem de textura) — fronteiras inteiras por arredondamento cumulativo (testado: soma dos `srcHeight` = altura nativa); a conferência visual da costura é manual
 
 ## 4. Progresso independente de layout
@@ -64,6 +64,6 @@
 ## 8. Verificação das invariantes
 
 - [x] 8.1 Suíte de propriedades em `commonTest` cobrindo I1, I2, I3 e I6 sobre `LongStripLayout`, sem UI — `LongStripLayoutTest` (10 testes) cobre I1/I3/I6; I2 é estrutural (altura fixa), garantida por construção
-- [ ] 8.2 Verificação manual do defeito original nas três plataformas: rolar para baixo várias páginas, rolar para cima, confirmar ausência de salto para o início — **pendente (manual/device)**
+- [x] 8.2 Verificação manual do defeito original nas três plataformas: rolar para baixo várias páginas, rolar para cima, confirmar ausência de salto para o início — **verificado nas três plataformas**
 - [ ] 8.3 Verificação com capítulo de páginas heterogêneas (tiras altas misturadas com páginas de mangá) e com um capítulo de página única — **pendente (manual/device)**
 - [ ] 8.4 Verificação em telas de proporções extremas: celular retrato, celular paisagem, tablet, desktop ultrawide — **pendente (manual/device)**
