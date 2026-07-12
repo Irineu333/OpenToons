@@ -65,5 +65,5 @@
 
 - [x] 8.1 Suíte de propriedades em `commonTest` cobrindo I1, I2, I3 e I6 sobre `LongStripLayout`, sem UI — `LongStripLayoutTest` (10 testes) cobre I1/I3/I6; I2 é estrutural (altura fixa), garantida por construção
 - [x] 8.2 Verificação manual do defeito original nas três plataformas: rolar para baixo várias páginas, rolar para cima, confirmar ausência de salto para o início — **verificado nas três plataformas**
-- [ ] 8.3 Verificação com capítulo de páginas heterogêneas (tiras altas misturadas com páginas de mangá) e com um capítulo de página única — **fixtures criadas** (`~/Documents/OpenToons/Teste Heterogeneo.cbz` = 16 tiras + 4 mangá, última curta; `Teste Pagina Unica.cbz`) e **lógica coberta** por testes (`LongStripLayoutTest`: tiles mistos, página única, inversas); falta a **verificação visual** importando no app
+- [x] 8.3 Verificação com capítulo de páginas heterogêneas (tiras altas misturadas com páginas de mangá) e com um capítulo de página única — **verificado**: páginas de mangá curtas aparecem entre as tiras altas sem salto de altura na transição (fixtures `Teste Heterogeneo.cbz`/`Teste Pagina Unica.cbz` + cobertura em `LongStripLayoutTest`)
 - [ ] 8.4 Verificação em telas de proporções extremas: celular retrato, celular paisagem, tablet, desktop ultrawide — **pendente (manual/device)**
