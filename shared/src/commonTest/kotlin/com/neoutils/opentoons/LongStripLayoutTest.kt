@@ -154,6 +154,46 @@ class LongStripLayoutTest {
         }
     }
 
+    // ---- 8.3: capítulo heterogêneo (tiras altas + páginas de mangá) e página única ----
+
+    @Test
+    fun capituloHeterogeneo_tirasAltasMisturadasComManga() {
+        // Reproduz o `Teste Heterogeneo.cbz`: tiras 700x1750 (multi-tile) e mangá 780x1200
+        // (tile único), intercalados. Cada página vira ≥1 tile de altura fixa; o total fecha.
+        val strip = PageGeometry(700, 1750)
+        val manga = PageGeometry(780, 1200)
+        val pages = List(20) { if ((it + 1) % 5 == 0) manga else strip }
+        // Largura onde a tira alta se divide: 1600 → tira ≈ 4000px (2 tiles), mangá ≈ 2461px (1 tile).
+        val layout = LongStripLayout(pages, contentWidthPx = 1600)
+
+        val stripTiles = layout.tiles.count { it.pageIndex == 0 }
+        val mangaTiles = layout.tiles.count { it.pageIndex == 4 }
+        assertTrue(stripTiles >= 2, "tira alta deve virar múltiplos tiles: $stripTiles")
+        assertEquals(1, mangaTiles, "página de mangá curta deve virar um único tile")
+
+        // Heterogeneidade real: a página de tira é mais alta que a de mangá.
+        val stripHeight = layout.positionOf(0, 1f) - layout.positionOf(0, 0f)
+        val mangaHeight = layout.positionOf(4, 1f) - layout.positionOf(4, 0f)
+        assertTrue(stripHeight > mangaHeight, "tira ($stripHeight) deve ser mais alta que mangá ($mangaHeight)")
+
+        // Total fecha e as inversas valem mesmo com geometria mista.
+        assertEquals(layout.totalHeightPx, layout.tiles.sumOf { it.heightPx.toLong() })
+        for (p in pages.indices) {
+            val pos = layout.positionAt(layout.positionOf(p, 0.5f))
+            assertEquals(p, pos.pageIndex)
+        }
+    }
+
+    @Test
+    fun capituloPaginaUnica_tiraAlta() {
+        // Reproduz o `Teste Pagina Unica.cbz`: uma única tira alta.
+        val layout = LongStripLayout(listOf(PageGeometry(700, 1750)), contentWidthPx = 1080)
+        assertTrue(layout.tiles.all { it.pageIndex == 0 })
+        assertEquals(layout.totalHeightPx, layout.tiles.sumOf { it.heightPx.toLong() })
+        // A posição final ainda reconstrói a página 0.
+        assertEquals(0, layout.positionAt(layout.totalHeightPx).pageIndex)
+    }
+
     @Test
     fun contentWidth_respeitaBreakpointDeClasse() {
         // Compacta (< 600dp): preenche a largura.
