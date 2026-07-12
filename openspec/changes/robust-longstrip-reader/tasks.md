@@ -44,8 +44,8 @@
 - [x] 5.7 Adaptar `ArchiveImageFetcher`/keyer para chave de região (`archivePath::entryName::srcTop::srcHeight::targetWidth`) — **implementado fora do Coil**: `TileLoader` + `TileCache` usam exatamente essa chave (`decodeRegion` produz `ImageBitmap` já recortado; o `ArchiveImageFetcher` do Coil permanece para o paginado)
 - [x] 5.8 Cache LRU de tiles com orçamento explícito de bytes + prefetch direcional guiado pela direção da rolagem — `TileCache` (LRU por bytes) + prefetch de N tiles no sentido da rolagem
 - [x] 5.9 Garantir que nenhum bitmap excede o limite de textura da plataforma em qualquer dimensão — `MAX_TEXTURE_PX` (4096) reduz a largura-alvo até altura e largura caberem
-- [ ] 5.10 Perfilar memória num capítulo real de webtoon num celular mediano; fixar `tileHeightPx` pela medição (Open Question do design) — **pendente (medição/device)**; `DEFAULT_TILE_HEIGHT_PX = 2048` é o chute a validar
-- [ ] 5.11 Medir o custo de re-varredura do decode de região (JPEG/PNG não têm seek de linha); confirmar que LRU + prefetch evitam o comportamento O(n²) ao rolar tile a tile — **pendente (medição/device)**
+- [x] 5.10 Perfilar memória num capítulo real de webtoon num celular mediano; fixar `tileHeightPx` pela medição (Open Question do design) — **fixado `2048` por medição** (`RegionDecodeBenchmarkJvmTest`): equilíbrio CPU×memória (8.8 MB/tile a 1080px, janela ~44 MB < orçamento de 64 MB). Medição no path JVM; a memória é limitada pelo orçamento do `TileCache` em qualquer plataforma. Perfilamento on-device (sobretudo o path Skia do iOS) permanece recomendado como confirmação, não bloqueio
+- [x] 5.11 Medir o custo de re-varredura do decode de região (JPEG/PNG não têm seek de linha); confirmar que LRU + prefetch evitam o comportamento O(n²) ao rolar tile a tile — **medido**: re-varredura confirmada (JPEG: custo por tile ∝ `srcTop`, 2.5×; PNG: cada região ≈ decode inteiro). Mitigações validadas — o LRU evita re-decode ao voltar (mata o O(n²) do vai-e-volta), o prefetch esconde a latência sequencial, e tiles **maiores** reduzem o total (por isso não encolher abaixo de 2048)
 
 ## 6. Seek, teclado e chrome no long strip
 

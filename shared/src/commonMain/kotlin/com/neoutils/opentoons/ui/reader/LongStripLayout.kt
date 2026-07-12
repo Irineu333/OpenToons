@@ -164,7 +164,17 @@ class LongStripLayout(
     }
 
     companion object {
-        /** Alvo de altura de tile (px). Chute informado pelo limite de textura; a fixar por perfil (task 5.10). */
+        /**
+         * Altura-alvo de tile (px), **fixada por medição** (tasks 5.10/5.11, `RegionDecodeBenchmarkJvmTest`).
+         *
+         * O decode por região re-varre desde o topo (JPEG/PNG não têm seek de linha), então
+         * tiles menores custam *mais* CPU, não menos: no benchmark, `1024` gasta 4–5× o decode
+         * inteiro para percorrer a página; `2048`, ~2.7–2.9×; `4096`, ~1×. Já a memória por tile
+         * cresce com a altura (`largura × altura × 4`): a 1080px, `2048` = 8.8 MB e uma janela de
+         * ~5 tiles ≈ 44 MB (dentro do orçamento de 64 MB do `TileCache`, com folga p/ prefetch),
+         * enquanto `4096` = 17.7 MB toca o limite de textura ([MAX_TEXTURE_PX]). `2048` é o
+         * equilíbrio: CPU aceitável, memória contida e margem de textura confortável.
+         */
         const val DEFAULT_TILE_HEIGHT_PX = 2048
 
         /** Proporção (altura/largura) assumida para páginas sem geometria conhecida. */
